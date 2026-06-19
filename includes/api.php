@@ -35,6 +35,48 @@ error_log("API Debug - Base Path: " . $basePath);
 error_log("API Debug - Endpoint: " . $endpoint);
 error_log("API Debug - Endpoint Parts: " . print_r($endpointParts, true));
 
+// Polyfill for getallheaders() if it is not supported in the host environment (e.g. Nginx/FastCGI on InfinityFree)
+if (!function_exists('getallheaders')) {
+    function getallheaders() {
+        $headers = [];
+        foreach ($_SERVER as $name => $value) {
+            if (substr($name, 0, 5) == 'HTTP_') {
+                $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
+            }
+        }
+        return $headers;
+    }
+}
+
+// Helper to retrieve authenticated user email
+function getAuthenticatedUserEmail() {
+    $headers = getallheaders();
+    $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+    
+    if (empty($authHeader)) {
+        $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+    }
+    
+    if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+        $token = trim($matches[1]);
+        if (filter_var($token, FILTER_VALIDATE_EMAIL)) {
+            return $token;
+        }
+        $decoded = base64_decode($token, true);
+        if ($decoded !== false && filter_var($decoded, FILTER_VALIDATE_EMAIL)) {
+            return $decoded;
+        }
+        return $token;
+    }
+    
+    $xEmail = $headers['X-User-Email'] ?? $headers['x-user-email'] ?? $_SERVER['HTTP_X_USER_EMAIL'] ?? '';
+    if (!empty($xEmail)) {
+        return trim($xEmail);
+    }
+    
+    throw new Exception('Unauthorized: Active email session required', 401);
+}
+
 try {
     // Handle different API endpoints
     if (count($endpointParts) >= 2 && $endpointParts[0] === 'api') {
@@ -46,6 +88,9 @@ try {
                 break;
             case 'public':
                 handlePublicRequest($db, $requestMethod, $endpointParts);
+                break;
+            case 'auth':
+                handleAuthRequest($requestMethod, $endpointParts);
                 break;
             default:
                 throw new Exception('Endpoint not found: ' . $apiEndpoint, 404);
@@ -60,6 +105,31 @@ try {
         'error' => $e->getMessage(),
         'code' => $e->getCode()
     ]);
+}
+
+// Handle /api/auth requests
+function handleAuthRequest($requestMethod, $endpointParts) {
+    if ($requestMethod !== 'POST') {
+        throw new Exception('Method not allowed', 405);
+    }
+    
+    $action = $endpointParts[2] ?? '';
+    if ($action === 'login') {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $email = $input['email'] ?? '';
+        
+        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new Exception('Invalid email address', 400);
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Login successful',
+            'email' => $email
+        ]);
+    } else {
+        throw new Exception('Invalid auth action', 400);
+    }
 }
 
 // Handle /api/assets requests
@@ -100,6 +170,7 @@ function handlePublicRequest($db, $requestMethod, $endpointParts) {
 
 // Get all assets or a specific asset
 function handleGetAssets($db, $endpointParts) {
+    $email = getAuthenticatedUserEmail();
     $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 20;
     $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
     $offset = ($page - 1) * $limit;
@@ -107,12 +178,12 @@ function handleGetAssets($db, $endpointParts) {
     if (isset($endpointParts[2])) {
         // Get specific asset
         $assetId = $endpointParts[2];
-        $stmt = $db->prepare("SELECT * FROM media_assets WHERE assetId = ?");
-        $stmt->execute([$assetId]);
+        $stmt = $db->prepare("SELECT * FROM media_assets WHERE assetId = ? AND (user_email = ? OR user_email IS NULL)");
+        $stmt->execute([$assetId, $email]);
         $asset = $stmt->fetch();
         
         if (!$asset) {
-            throw new Exception('Asset not found', 404);
+            throw new Exception('Asset not found or access denied', 404);
         }
         
         echo json_encode([
@@ -120,13 +191,14 @@ function handleGetAssets($db, $endpointParts) {
             'data' => $asset
         ]);
     } else {
-        // Get all assets with pagination
-        $stmt = $db->prepare("SELECT * FROM media_assets ORDER BY createdAt DESC LIMIT ? OFFSET ?");
-        $stmt->execute([$limit, $offset]);
+        // Get all assets for this user (or legacy files without user email) with pagination
+        $stmt = $db->prepare("SELECT * FROM media_assets WHERE (user_email = ? OR user_email IS NULL) ORDER BY createdAt DESC LIMIT ? OFFSET ?");
+        $stmt->execute([$email, $limit, $offset]);
         $assets = $stmt->fetchAll();
         
         // Get total count for pagination
-        $countStmt = $db->query("SELECT COUNT(*) FROM media_assets");
+        $countStmt = $db->prepare("SELECT COUNT(*) FROM media_assets WHERE (user_email = ? OR user_email IS NULL)");
+        $countStmt->execute([$email]);
         $total = $countStmt->fetchColumn();
         
         echo json_encode([
@@ -144,6 +216,8 @@ function handleGetAssets($db, $endpointParts) {
 
 // Handle asset deletion
 function handleDeleteAsset($db, $assetId) {
+    $email = getAuthenticatedUserEmail();
+    
     // Find the asset first
     $stmt = $db->prepare("SELECT * FROM media_assets WHERE assetId = ?");
     $stmt->execute([$assetId]);
@@ -151,6 +225,11 @@ function handleDeleteAsset($db, $assetId) {
     
     if (!$asset) {
         throw new Exception('Asset not found', 404);
+    }
+    
+    // Enforce ownership: only the uploader (or if it's NULL, anyone authenticated) can delete it
+    if ($asset['user_email'] !== null && $asset['user_email'] !== $email) {
+        throw new Exception('Unauthorized: You do not own this asset', 403);
     }
     
     // Delete the file from storage
@@ -172,6 +251,8 @@ function handleDeleteAsset($db, $assetId) {
 
 // Handle file upload
 function handleUploadAsset($db) {
+    $email = getAuthenticatedUserEmail();
+
     // Check if file was uploaded
     if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
         throw new Exception('No file uploaded or upload error', 400);
@@ -239,11 +320,17 @@ function handleUploadAsset($db) {
     
     // Generate public URL pointing directly to the uploaded file
     $publicUrl = BASE_URL . '/uploads/' . $secureFilename;
-    // Ensure the public URL is correctly formatted (no double slashes)
-    $publicUrl = preg_replace('#/+#', '/', $publicUrl);
+    // Safely format the public URL (prevent duplicate slashes in path while preserving the protocol slash)
+    $urlParts = explode('://', $publicUrl, 2);
+    if (count($urlParts) === 2) {
+        $urlParts[1] = preg_replace('#/+#', '/', $urlParts[1]);
+        $publicUrl = $urlParts[0] . '://' . $urlParts[1];
+    } else {
+        $publicUrl = preg_replace('#/+#', '/', $publicUrl);
+    }
     
     // Store in database
-    $stmt = $db->prepare("INSERT INTO media_assets (assetId, originalFilename, secureFilename, mimeType, fileSize, storagePath, publicUrl) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt = $db->prepare("INSERT INTO media_assets (assetId, originalFilename, secureFilename, mimeType, fileSize, storagePath, publicUrl, user_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
     $stmt->execute([
         $assetId,
         $file['name'],
@@ -251,7 +338,8 @@ function handleUploadAsset($db) {
         $mimeType,
         $file['size'],
         $secureFilename,
-        $publicUrl
+        $publicUrl,
+        $email
     ]);
     
     // Get the inserted asset by assetId (not id)

@@ -1,315 +1,323 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Documentation - Custom Cloud Storage Gateway</title>
+    <title>API Documentation - Custom Gateway</title>
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['"Bricolage Grotesque"', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50: '#f0f5ff',
+                            100: '#e0ebff',
+                            500: '#4169e1', // Royal Blue
+                            600: '#3a5ec9',
+                            700: '#2f4eb3',
+                            900: '#1b2f7a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #000000;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(65, 105, 225, 0.12) 0, transparent 50%), 
+                radial-gradient(at 100% 100%, rgba(65, 105, 225, 0.08) 0, transparent 50%);
+            background-attachment: fixed;
+        }
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
 </head>
-<body class="bg-gray-50">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <h1 class="text-xl font-bold text-gray-900">Custom Cloud Storage Gateway</h1>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <a href="index.html" class="text-gray-600 hover:text-gray-900">Gallery</a>
-                    <a href="upload.html" class="text-gray-600 hover:text-gray-900">Upload</a>
-                    <a href="docs.html" class="text-blue-600 font-medium">API Docs</a>
-                </div>
-            </div>
-        </div>
-    </nav>
+<body class="text-gray-100 min-h-screen font-sans">
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="mb-8">
-            <h2 class="text-3xl font-bold text-gray-900">API Documentation</h2>
-            <p class="mt-2 text-gray-600">RESTful API endpoints for managing media assets</p>
+        <!-- Navigation Header -->
+        <header class="flex justify-between items-center mb-10">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-brand-500/10 border border-brand-500/20 rounded-xl">
+                    <svg class="w-6 h-6 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                </div>
+                <span class="text-lg font-bold text-gray-200">Custom Gateway</span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <a href="/" class="px-4 py-2 bg-gray-900 border border-gray-800 hover:border-gray-700 text-gray-300 hover:text-white rounded-xl text-sm font-semibold transition">
+                    ← Back to Dashboard
+                </a>
+            </div>
+        </header>
+
+        <div class="mb-10">
+            <h2 class="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-gray-100 to-gray-400 bg-clip-text text-transparent">API Documentation</h2>
+            <p class="mt-2 text-gray-400">RESTful API endpoints for managing files, documents, and media securely.</p>
         </div>
 
         <!-- Base URL -->
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
-            <h3 class="text-lg font-semibold text-blue-900 mb-2">Base URL</h3>
-            <code class="bg-blue-100 px-3 py-1 rounded text-blue-800" id="baseUrl">Loading...</code>
+        <div class="glass-panel rounded-2xl border border-gray-800/80 p-5 mb-8">
+            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Base Endpoint URL</h3>
+            <div class="flex items-center space-x-3 bg-gray-950 px-4 py-3 rounded-xl border border-gray-900 font-mono text-sm text-brand-400">
+                <span id="baseUrl">Loading...</span>
+            </div>
+        </div>
+
+        <!-- Auth Requirements -->
+        <div class="glass-panel rounded-2xl border border-gray-800/80 p-6 mb-8 relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-amber-500 rounded-full blur-[80px] opacity-20"></div>
+            <h3 class="text-lg font-bold text-gray-200 mb-3 flex items-center space-x-2">
+                <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                <span>Authentication Required</span>
+            </h3>
+            <p class="text-sm text-gray-400 mb-4">
+                To list, upload, or delete assets, your HTTP client must send one of the following authentication headers.
+            </p>
+            <div class="space-y-3">
+                <div class="bg-gray-950 p-4 rounded-xl border border-gray-900 font-mono text-xs">
+                    <p class="text-brand-400"><span class="text-gray-500"># Option A (Standard Bearer Auth - Raw or Base64 encoded email)</span></p>
+                    <p class="text-gray-300">Authorization: Bearer <span class="text-purple-400">your-email@domain.com</span></p>
+                </div>
+                <div class="bg-gray-950 p-4 rounded-xl border border-gray-900 font-mono text-xs">
+                    <p class="text-brand-400"><span class="text-gray-500"># Option B (Custom Workspace Header)</span></p>
+                    <p class="text-gray-300">X-User-Email: <span class="text-purple-400">your-email@domain.com</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Endpoints List -->
+        
+        <!-- Auth Login -->
+        <div class="glass-panel rounded-2xl border border-gray-800/80 mb-6 overflow-hidden">
+            <div class="p-6 border-b border-gray-850/80 bg-gray-900/40">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3">
+                        <span class="bg-brand-500/10 border border-brand-500/30 text-brand-400 text-xs font-bold px-3 py-1.5 rounded-lg">POST</span>
+                        <h3 class="text-lg font-bold text-gray-200">/api/auth/login</h3>
+                    </div>
+                    <span class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Validate Workspace Session</span>
+                </div>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-gray-400">Registers or verifies an active workspace session for a user email address.</p>
+                
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Request Payload (JSON)</h4>
+                <pre class="bg-gray-950 text-gray-300 p-4 rounded-xl border border-gray-900 text-xs font-mono">{
+  "email": "user@example.com"
+}</pre>
+
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Success Response (200)</h4>
+                <pre class="bg-gray-950 text-gray-300 p-4 rounded-xl border border-gray-900 text-xs font-mono">{
+  "success": true,
+  "message": "Login successful",
+  "email": "user@example.com"
+}</pre>
+            </div>
         </div>
 
         <!-- Upload Endpoint -->
-        <div class="bg-white rounded-lg shadow mb-6">
-            <div class="p-6 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <span class="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full mr-4">POST</span>
-                        <h3 class="text-xl font-semibold text-gray-900">/api/upload</h3>
+        <div class="glass-panel rounded-2xl border border-gray-800/80 mb-6 overflow-hidden">
+            <div class="p-6 border-b border-gray-850/80 bg-gray-900/40">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3">
+                        <span class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-lg">POST</span>
+                        <h3 class="text-lg font-bold text-gray-200">/api/assets</h3>
                     </div>
-                    <span class="text-sm text-gray-500">Upload media files</span>
+                    <span class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Upload Documents & Media</span>
                 </div>
             </div>
-            <div class="p-6">
-                <p class="text-gray-700 mb-4">Upload images or videos to the storage gateway. Supports multipart/form-data encoding.</p>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-gray-400">Upload images, videos, documents (PDF, Excel, Word, Text), PowerPoint, audio, or archive files to the gateway. Supports multipart/form-data encoding.</p>
                 
-                <h4 class="font-semibold text-gray-900 mb-2">Request Parameters</h4>
-                <table class="w-full mb-6">
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Form Parameters</h4>
+                <table class="w-full text-sm text-left">
                     <thead>
-                        <tr class="border-b">
-                            <th class="text-left py-2 px-4 font-medium text-gray-700">Field</th>
-                            <th class="text-left py-2 px-4 font-medium text-gray-700">Type</th>
-                            <th class="text-left py-2 px-4 font-medium text-gray-700">Description</th>
+                        <tr class="border-b border-gray-850 text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                            <th class="py-2.5">Field</th>
+                            <th class="py-2.5">Type</th>
+                            <th class="py-2.5">Required</th>
+                            <th class="py-2.5">Description</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr class="border-b">
-                            <td class="py-2 px-4 font-mono text-sm">file</td>
-                            <td class="py-2 px-4 text-sm">File</td>
-                            <td class="py-2 px-4 text-sm">The media file to upload (image or video)</td>
+                    <tbody class="divide-y divide-gray-900 text-gray-300">
+                        <tr>
+                            <td class="py-3 font-mono text-xs text-brand-400">file</td>
+                            <td class="py-3 text-xs">File Binary</td>
+                            <td class="py-3 text-xs text-red-500">Yes</td>
+                            <td class="py-3 text-xs">The file to upload (Max 500MB)</td>
                         </tr>
                     </tbody>
                 </table>
 
-                <h4 class="font-semibold text-gray-900 mb-2">Response (Success - 201)</h4>
-                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">{
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Success Response (200)</h4>
+                <pre class="bg-gray-950 text-gray-300 p-4 rounded-xl border border-gray-900 text-xs font-mono">{
   "success": true,
   "data": {
-    "assetId": "550e8400-e29b-41d4-a716-446655440000",
-    "originalFilename": "vacation.jpg",
-    "secureFilename": "1625123456-a1b2c3d4e5f6.jpg",
-    "mimeType": "image/jpeg",
-    "fileSize": 2048576,
-    "storagePath": "/uploads/1625123456-a1b2c3d4e5f6.jpg",
-    "publicUrl": "https://example.com/uploads/1625123456-a1b2c3d4e5f6.jpg",
-    "createdAt": "2024-06-19T10:30:00Z"
+    "assetId": "48b17b2bca6937bc38abda8c9735d1f1",
+    "originalFilename": "invoice_Q2.xlsx",
+    "secureFilename": "1625123456-e91b5c46.xlsx",
+    "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "fileSize": 1048576,
+    "storagePath": "1625123456-e91b5c46.xlsx",
+    "publicUrl": "http://localhost/uploads/1625123456-e91b5c46.xlsx",
+    "user_email": "user@example.com",
+    "createdAt": "2026-06-19 18:30:00"
   }
-}</pre>
-
-                <h4 class="font-semibold text-gray-900 mb-2 mt-4">Response (Error - 400/500)</h4>
-                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">{
-  "success": false,
-  "error": "Error message here"
 }</pre>
             </div>
         </div>
 
         <!-- List Assets Endpoint -->
-        <div class="bg-white rounded-lg shadow mb-6">
-            <div class="p-6 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full mr-4">GET</span>
-                        <h3 class="text-xl font-semibold text-gray-900">/api/assets</h3>
+        <div class="glass-panel rounded-2xl border border-gray-800/80 mb-6 overflow-hidden">
+            <div class="p-6 border-b border-gray-850/80 bg-gray-900/40">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3">
+                        <span class="bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold px-3 py-1.5 rounded-lg">GET</span>
+                        <h3 class="text-lg font-bold text-gray-200">/api/assets</h3>
                     </div>
-                    <span class="text-sm text-gray-500">List all media assets</span>
+                    <span class="text-xs text-gray-500 font-semibold uppercase tracking-wider">List Personal Files</span>
                 </div>
             </div>
-            <div class="p-6">
-                <p class="text-gray-700 mb-4">Retrieve a paginated list of all uploaded media assets, sorted by creation date (newest first).</p>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-gray-400">Retrieve a paginated list of all uploaded assets belonging to the authenticated workspace email, sorted by creation date (newest first).</p>
                 
-                <h4 class="font-semibold text-gray-900 mb-2">Query Parameters</h4>
-                <table class="w-full mb-6">
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Query Parameters</h4>
+                <table class="w-full text-sm text-left">
                     <thead>
-                        <tr class="border-b">
-                            <th class="text-left py-2 px-4 font-medium text-gray-700">Parameter</th>
-                            <th class="text-left py-2 px-4 font-medium text-gray-700">Type</th>
-                            <th class="text-left py-2 px-4 font-medium text-gray-700">Description</th>
+                        <tr class="border-b border-gray-850 text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                            <th class="py-2.5">Parameter</th>
+                            <th class="py-2.5">Type</th>
+                            <th class="py-2.5">Default</th>
+                            <th class="py-2.5">Description</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr class="border-b">
-                            <td class="py-2 px-4 font-mono text-sm">page</td>
-                            <td class="py-2 px-4 text-sm">Integer</td>
-                            <td class="py-2 px-4 text-sm">Page number (default: 1)</td>
+                    <tbody class="divide-y divide-gray-900 text-gray-300">
+                        <tr>
+                            <td class="py-3 font-mono text-xs text-brand-400">page</td>
+                            <td class="py-3 text-xs">Integer</td>
+                            <td class="py-3 text-xs">1</td>
+                            <td class="py-3 text-xs">Page number to view</td>
                         </tr>
-                        <tr class="border-b">
-                            <td class="py-2 px-4 font-mono text-sm">limit</td>
-                            <td class="py-2 px-4 text-sm">Integer</td>
-                            <td class="py-2 px-4 text-sm">Items per page (default: 20, max: 100)</td>
+                        <tr>
+                            <td class="py-3 font-mono text-xs text-brand-400">limit</td>
+                            <td class="py-3 text-xs">Integer</td>
+                            <td class="py-3 text-xs">20</td>
+                            <td class="py-3 text-xs">Number of results per page</td>
                         </tr>
                     </tbody>
                 </table>
 
-                <h4 class="font-semibold text-gray-900 mb-2">Response (Success - 200)</h4>
-                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">{
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Success Response (200)</h4>
+                <pre class="bg-gray-950 text-gray-300 p-4 rounded-xl border border-gray-900 text-xs font-mono">{
   "success": true,
   "data": [
     {
-      "assetId": "550e8400-e29b-41d4-a716-446655440000",
-      "originalFilename": "vacation.jpg",
-      "secureFilename": "1625123456-a1b2c3d4e5f6.jpg",
-      "mimeType": "image/jpeg",
-      "fileSize": 2048576,
-      "publicUrl": "https://example.com/uploads/1625123456-a1b2c3d4e5f6.jpg",
-      "createdAt": "2024-06-19T10:30:00Z"
+      "assetId": "48b17b2bca6937bc38abda8c9735d1f1",
+      "originalFilename": "invoice_Q2.xlsx",
+      "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "fileSize": 1048576,
+      "publicUrl": "http://localhost/uploads/1625123456-e91b5c46.xlsx",
+      "user_email": "user@example.com",
+      "createdAt": "2026-06-19 18:30:00"
     }
   ],
   "pagination": {
     "page": 1,
     "limit": 20,
-    "total": 42,
-    "totalPages": 3
+    "total": 1,
+    "pages": 1
   }
 }</pre>
             </div>
         </div>
 
-        <!-- Get Asset Endpoint -->
-        <div class="bg-white rounded-lg shadow mb-6">
-            <div class="p-6 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full mr-4">GET</span>
-                        <h3 class="text-xl font-semibold text-gray-900">/api/assets/{assetId}</h3>
+        <!-- Get Single Asset -->
+        <div class="glass-panel rounded-2xl border border-gray-800/80 mb-6 overflow-hidden">
+            <div class="p-6 border-b border-gray-850/80 bg-gray-900/40">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3">
+                        <span class="bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold px-3 py-1.5 rounded-lg">GET</span>
+                        <h3 class="text-lg font-bold text-gray-200">/api/assets/{assetId}</h3>
                     </div>
-                    <span class="text-sm text-gray-500">Get single asset details</span>
+                    <span class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Retrieve File Metadata</span>
                 </div>
             </div>
-            <div class="p-6">
-                <p class="text-gray-700 mb-4">Retrieve details for a specific media asset by its assetId.</p>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-gray-400">Fetch metadata details for a specific file by its UUID or assetId. Requires authorization ownership.</p>
                 
-                <h4 class="font-semibold text-gray-900 mb-2">URL Parameters</h4>
-                <table class="w-full mb-6">
-                    <thead>
-                        <tr class="border-b">
-                            <th class="text-left py-2 px-4 font-medium text-gray-700">Parameter</th>
-                            <th class="text-left py-2 px-4 font-medium text-gray-700">Type</th>
-                            <th class="text-left py-2 px-4 font-medium text-gray-700">Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="border-b">
-                            <td class="py-2 px-4 font-mono text-sm">assetId</td>
-                            <td class="py-2 px-4 text-sm">String (UUID)</td>
-                            <td class="py-2 px-4 text-sm">The unique asset identifier</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <h4 class="font-semibold text-gray-900 mb-2">Response (Success - 200)</h4>
-                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">{
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Success Response (200)</h4>
+                <pre class="bg-gray-950 text-gray-300 p-4 rounded-xl border border-gray-900 text-xs font-mono">{
   "success": true,
   "data": {
-    "assetId": "550e8400-e29b-41d4-a716-446655440000",
-    "originalFilename": "vacation.jpg",
-    "secureFilename": "1625123456-a1b2c3d4e5f6.jpg",
-    "mimeType": "image/jpeg",
-    "fileSize": 2048576,
-    "publicUrl": "https://example.com/uploads/1625123456-a1b2c3d4e5f6.jpg",
-    "createdAt": "2024-06-19T10:30:00Z"
+    "assetId": "48b17b2bca6937bc38abda8c9735d1f1",
+    "originalFilename": "invoice_Q2.xlsx",
+    "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "fileSize": 1048576,
+    "publicUrl": "http://localhost/uploads/1625123456-e91b5c46.xlsx",
+    "user_email": "user@example.com",
+    "createdAt": "2026-06-19 18:30:00"
   }
 }</pre>
-
-                <h4 class="font-semibold text-gray-900 mb-2 mt-4">Response (Not Found - 404)</h4>
-                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">{
-  "success": false,
-  "error": "Asset not found"
-}</pre>
             </div>
         </div>
 
-        <!-- Delete Asset Endpoint -->
-        <div class="bg-white rounded-lg shadow mb-6">
-            <div class="p-6 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <span class="bg-red-100 text-red-800 text-sm font-medium px-3 py-1 rounded-full mr-4">DELETE</span>
-                        <h3 class="text-xl font-semibold text-gray-900">/api/assets/{assetId}</h3>
+        <!-- Delete Asset -->
+        <div class="glass-panel rounded-2xl border border-gray-800/80 mb-10 overflow-hidden">
+            <div class="p-6 border-b border-gray-850/80 bg-gray-900/40">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3">
+                        <span class="bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold px-3 py-1.5 rounded-lg">DELETE</span>
+                        <h3 class="text-lg font-bold text-gray-200">/api/assets/{assetId}</h3>
                     </div>
-                    <span class="text-sm text-gray-500">Delete a media asset</span>
+                    <span class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Permanently Delete File</span>
                 </div>
             </div>
-            <div class="p-6">
-                <p class="text-gray-700 mb-4">Permanently delete a media asset and its associated file from storage.</p>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-gray-400">Permanently delete a file from both the storage directory and the database index. Only permitted if the authenticated user owns the asset.</p>
                 
-                <h4 class="font-semibold text-gray-900 mb-2">URL Parameters</h4>
-                <table class="w-full mb-6">
-                    <thead>
-                        <tr class="border-b">
-                            <th class="text-left py-2 px-4 font-medium text-gray-700">Parameter</th>
-                            <th class="text-left py-2 px-4 font-medium text-gray-700">Type</th>
-                            <th class="text-left py-2 px-4 font-medium text-gray-700">Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="border-b">
-                            <td class="py-2 px-4 font-mono text-sm">assetId</td>
-                            <td class="py-2 px-4 text-sm">String (UUID)</td>
-                            <td class="py-2 px-4 text-sm">The unique asset identifier</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <h4 class="font-semibold text-gray-900 mb-2">Response (Success - 200)</h4>
-                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">{
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Success Response (200)</h4>
+                <pre class="bg-gray-950 text-gray-300 p-4 rounded-xl border border-gray-900 text-xs font-mono">{
   "success": true,
-  "message": "Asset deleted successfully"
-}</pre>
-
-                <h4 class="font-semibold text-gray-900 mb-2 mt-4">Response (Not Found - 404)</h4>
-                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">{
-  "success": false,
-  "error": "Asset not found"
+  "message": "Asset deleted successfully",
+  "assetId": "48b17b2bca6937bc38abda8c9735d1f1"
 }</pre>
             </div>
         </div>
 
-        <!-- Supported File Types -->
-        <div class="bg-white rounded-lg shadow mb-6">
-            <div class="p-6 border-b border-gray-200">
-                <h3 class="text-xl font-semibold text-gray-900">Supported File Types</h3>
+        <!-- Quick Start cURL -->
+        <div class="glass-panel rounded-2xl border border-gray-800/80 overflow-hidden">
+            <div class="p-6 border-b border-gray-850/80 bg-gray-900/40">
+                <h3 class="text-lg font-bold text-gray-200">Terminal Quick Start</h3>
             </div>
-            <div class="p-6">
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <h4 class="font-semibold text-gray-900 mb-2">Images</h4>
-                        <ul class="space-y-1 text-gray-700">
-                            <li class="font-mono text-sm">image/jpeg (.jpg, .jpeg)</li>
-                            <li class="font-mono text-sm">image/png (.png)</li>
-                            <li class="font-mono text-sm">image/gif (.gif)</li>
-                            <li class="font-mono text-sm">image/webp (.webp)</li>
-                            <li class="font-mono text-sm">image/svg+xml (.svg)</li>
-                            <li class="font-mono text-sm">image/bmp (.bmp)</li>
-                            <li class="font-mono text-sm">image/tiff (.tiff)</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 class="font-semibold text-gray-900 mb-2">Videos</h4>
-                        <ul class="space-y-1 text-gray-700">
-                            <li class="font-mono text-sm">video/mp4 (.mp4)</li>
-                            <li class="font-mono text-sm">video/webm (.webm)</li>
-                            <li class="font-mono text-sm">video/ogg (.ogg)</li>
-                            <li class="font-mono text-sm">video/quicktime (.mov)</li>
-                            <li class="font-mono text-sm">video/x-msvideo (.avi)</li>
-                            <li class="font-mono text-sm">video/x-matroska (.mkv)</li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p class="text-sm text-yellow-800">
-                        <strong>Note:</strong> Maximum file size is 500MB. Files are stored with secure random filenames to prevent direct access and enumeration.
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quick Start -->
-        <div class="bg-white rounded-lg shadow">
-            <div class="p-6 border-b border-gray-200">
-                <h3 class="text-xl font-semibold text-gray-900">Quick Start Example</h3>
-            </div>
-            <div class="p-6">
-                <p class="text-gray-700 mb-4">Here's how to upload a file using cURL:</p>
-                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">curl -X POST \
-  -F "file=@/path/to/your/image.jpg" \
-  https://yourdomain.com/api/upload</pre>
-                
-                <p class="text-gray-700 mt-4 mb-2">And to list all assets:</p>
-                <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">curl https://yourdomain.com/api/assets</pre>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-gray-400">Upload a secure document from your terminal using cURL:</p>
+                <pre class="bg-gray-950 text-gray-300 p-4 rounded-xl border border-gray-900 text-xs font-mono">curl -X POST \
+  -H "Authorization: Bearer user@example.com" \
+  -F "file=@/path/to/invoice.xlsx" \
+  <span id="curlBaseUrl">http://localhost</span>/api/assets</pre>
             </div>
         </div>
     </div>
 
     <script>
-        // Set base URL dynamically
-        document.getElementById('baseUrl').textContent = window.location.origin + window.location.pathname.replace(/\/docs\.html$/, '');
+        const API_BASE = window.location.origin + window.location.pathname.replace(/\/docs\.html$/, '');
+        document.getElementById('baseUrl').textContent = API_BASE;
+        document.getElementById('curlBaseUrl').textContent = API_BASE;
     </script>
 </body>
 </html>

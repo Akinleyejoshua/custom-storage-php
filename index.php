@@ -17,7 +17,17 @@ define('BASE_PATH', __DIR__);
 
 // Route requests
 $requestUri = $_SERVER['REQUEST_URI'];
-$requestPath = trim(parse_url($requestUri, PHP_URL_PATH), '/');
+$requestPath = parse_url($requestUri, PHP_URL_PATH);
+
+// Strip the script's directory prefix (handles subdirectory installations in XAMPP/InfinityFree)
+$basePath = dirname($_SERVER['SCRIPT_NAME']);
+if ($basePath !== '/' && $basePath !== '\\') {
+    if (strpos($requestPath, $basePath) === 0) {
+        $requestPath = substr($requestPath, strlen($basePath));
+    }
+}
+
+$requestPath = trim($requestPath, '/');
 $requestPath = preg_replace('#/+#', '/', $requestPath);
 
 // Handle API requests

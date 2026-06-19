@@ -1,288 +1,262 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload Media - Custom Cloud Storage Gateway</title>
+    <title>Upload Secure Files - Custom Gateway</title>
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['"Bricolage Grotesque"', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50: '#f0f5ff',
+                            100: '#e0ebff',
+                            500: '#4169e1', // Royal Blue
+                            600: '#3a5ec9',
+                            700: '#2f4eb3',
+                            900: '#1b2f7a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        .drop-zone {
-            border: 3px dashed #d1d5db;
-            border-radius: 1rem;
-            padding: 3rem;
-            text-align: center;
-            transition: all 0.3s ease;
-            background-color: #f9fafb;
+        body {
+            background-color: #000000;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(65, 105, 225, 0.12) 0, transparent 50%), 
+                radial-gradient(at 100% 100%, rgba(65, 105, 225, 0.08) 0, transparent 50%);
+            background-attachment: fixed;
         }
-        
-        .drop-zone.dragover {
-            border-color: #3b82f6;
-            background-color: #eff6ff;
-            transform: scale(1.02);
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
-        
-        .upload-progress {
-            height: 8px;
-            background-color: #e5e7eb;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 1rem;
-        }
-        
-        .upload-progress-bar {
-            height: 100%;
-            background-color: #3b82f6;
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-        
-        .upload-success {
-            background-color: #f0fdf4;
-            border-color: #10b981;
-        }
-        
-        .upload-error {
-            background-color: #fef2f2;
-            border-color: #ef4444;
-        }
-        
-        .file-info {
-            background-color: #f3f4f6;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-top: 1rem;
-        }
-        
-        .copy-url-btn {
-            background-color: #10b981;
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            transition: background-color 0.2s ease;
-        }
-        
-        .copy-url-btn:hover {
-            background-color: #059669;
-        }
-        
-        .copy-url-btn:disabled {
-            background-color: #9ca3af;
-            cursor: not-allowed;
+        .drop-zone-active {
+            border-color: #8b5cf6 !important;
+            background: rgba(124, 58, 237, 0.1) !important;
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <div class="container mx-auto py-8 px-4">
+<body class="text-gray-100 min-h-screen font-sans">
+    
+    <div class="container mx-auto py-8 px-4 max-w-3xl">
         <header class="flex justify-between items-center mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">Upload Media</h1>
-            <a href="/" class="text-blue-600 hover:text-blue-800 font-medium">← Back to Gallery</a>
-        </header>
-        
-        <div class="max-w-2xl mx-auto">
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <div id="drop-zone" class="drop-zone cursor-pointer">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-brand-500/10 border border-brand-500/20 rounded-xl">
+                    <svg class="w-6 h-6 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                     </svg>
-                    <p class="mt-2 text-sm text-gray-600">
-                        <span class="font-semibold text-blue-600 hover:text-blue-500">Click to upload</span> or drag and drop
-                    </p>
-                    <p class="mt-1 text-xs text-gray-500">
-                        Images (JPG, PNG, GIF, WebP, SVG, BMP, TIFF) and Videos (MP4, WebM, OGG, MOV, AVI, MKV)
-                    </p>
-                    <p class="mt-1 text-xs text-gray-400">
-                        Maximum file size: 500MB
-                    </p>
                 </div>
-                
-                <input type="file" id="file-input" class="hidden" accept="image/*,video/*">
-                
-                <div id="upload-status" class="mt-6 hidden">
-                    <div class="file-info">
-                        <div class="flex justify-between items-center mb-2">
-                            <h3 id="file-name" class="font-medium text-gray-800 truncate"></h3>
-                            <span id="file-size" class="text-sm text-gray-500"></span>
-                        </div>
-                        <div id="upload-progress" class="upload-progress">
-                            <div id="upload-progress-bar" class="upload-progress-bar"></div>
-                        </div>
-                        <p id="upload-status-text" class="mt-2 text-sm text-gray-600"></p>
-                    </div>
-                    
-                    <div id="upload-result" class="mt-4 hidden">
-                        <div class="bg-gray-50 rounded-lg p-4">
-                            <h4 class="font-semibold text-gray-800 mb-2">Upload Complete!</h4>
-                            <div class="flex items-center space-x-2">
-                                <input type="text" id="public-url" readonly class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm" value="">
-                                <button id="copy-url-btn" onclick="copyToClipboard()" class="copy-url-btn">Copy URL</button>
-                            </div>
-                            <p class="mt-2 text-xs text-gray-500">Share this URL to give others access to your media</p>
-                        </div>
-                    </div>
-                </div>
+                <span class="text-lg font-bold text-gray-200">Custom Gateway</span>
             </div>
-            
-            <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 class="font-semibold text-blue-800 mb-2">Upload Tips</h3>
-                <ul class="text-sm text-blue-700 space-y-1">
-                    <li>• Images are optimized for web viewing</li>
-                    <li>• Videos are streamed for efficient playback</li>
-                    <li>• All files are scanned for security</li>
-                    <li>• You can upload multiple files by selecting them one at a time</li>
-                </ul>
+            <a href="/" class="px-4 py-2 bg-gray-900 border border-gray-800 hover:border-gray-700 text-gray-300 hover:text-white rounded-xl text-sm font-semibold transition flex items-center space-x-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l-7-7m7-7H3"></path></svg>
+                <span>Dashboard</span>
+            </a>
+        </header>
+
+        <div class="glass-panel rounded-2xl border border-gray-800/80 p-6 sm:p-8">
+            <h2 class="text-2xl font-bold mb-2">Upload Files</h2>
+            <p class="text-gray-400 text-sm mb-6">Your session is connected to space: <span class="font-semibold text-gray-300" id="sessionEmail">...</span></p>
+
+            <!-- Drag & Drop Zone -->
+            <div id="dropZone" class="border-2 border-dashed border-gray-800 hover:border-brand-500/50 bg-gray-900/20 rounded-2xl p-12 text-center cursor-pointer transition-all duration-200 group">
+                <input type="file" id="fileInput" class="hidden" multiple onchange="handleFileSelect(event)">
+                <svg class="mx-auto h-12 w-12 text-gray-500 group-hover:text-brand-500 transition duration-200 mb-4" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <p class="text-sm font-semibold text-gray-300">
+                    <span class="text-brand-400 hover:text-brand-300">Click to choose files</span> or drag & drop here
+                </p>
+                <p class="text-xs text-gray-500 mt-2">
+                    Images, Videos, PDFs, ZIP, Spreadsheets, presentations, Audio, Text (up to 500MB)
+                </p>
             </div>
+
+            <!-- Uploading Progress/Status List -->
+            <div id="uploadList" class="mt-6 space-y-4"></div>
+        </div>
+
+        <div class="mt-6 bg-brand-500/5 border border-brand-500/10 rounded-2xl p-5">
+            <h3 class="font-semibold text-brand-400 text-sm mb-2">Upload Tips</h3>
+            <ul class="text-xs text-gray-400 space-y-1.5">
+                <li>• All uploaded files are private to your logged-in email space.</li>
+                <li>• Links generated can be shared directly with trusted recipients.</li>
+                <li>• Drag multiple documents at once to upload them in batch.</li>
+            </ul>
         </div>
     </div>
-    
+
+    <!-- Logic Script -->
     <script>
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('file-input');
-        const uploadStatus = document.getElementById('upload-status');
-        const uploadProgress = document.getElementById('upload-progress');
-        const uploadProgressBar = document.getElementById('upload-progress-bar');
-        const uploadStatusText = document.getElementById('upload-status-text');
-        const uploadResult = document.getElementById('upload-result');
-        const publicUrlInput = document.getElementById('public-url');
-        const copyUrlBtn = document.getElementById('copy-url-btn');
-        
-        // Click to upload
-        dropZone.addEventListener('click', () => fileInput.click());
-        
-        // File input change
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                handleFileUpload(e.target.files[0]);
-            }
-        });
-        
-        // Drag and drop
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
-        
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('dragover');
-        });
-        
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            
-            if (e.dataTransfer.files.length > 0) {
-                handleFileUpload(e.dataTransfer.files[0]);
-            }
-        });
-        
-        async function handleFileUpload(file) {
-            // Validate file type
-            const allowedTypes = [
-                'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/bmp', 'image/tiff',
-                'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'
-            ];
-            
-            if (!allowedTypes.includes(file.type)) {
-                alert('Invalid file type. Please upload an image or video file.');
+        const API_BASE = window.location.origin + window.location.pathname.replace(/\/upload\.html$/, '').replace(/\/$/, '');
+        let email = localStorage.getItem('custom_gateway_email');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!email) {
+                // If not authenticated, send to main index page
+                window.location.href = '/';
                 return;
             }
+            document.getElementById('sessionEmail').textContent = email;
+            setupDragAndDrop();
+        });
+
+        function getAuthHeader() {
+            return { 
+                'Authorization': `Bearer ${btoa(email)}`,
+                'X-User-Email': email
+            };
+        }
+
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('dropZone');
             
-            // Validate file size (500MB)
-            const maxSize = 500 * 1024 * 1024;
-            if (file.size > maxSize) {
-                alert('File size exceeds 500MB limit');
-                return;
+            dropZone.addEventListener('click', () => document.getElementById('fileInput').click());
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('drop-zone-active');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('drop-zone-active');
+                }, false);
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length > 0) {
+                    handleFilesUpload(files);
+                }
+            });
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                handleFilesUpload(files);
             }
+        }
+
+        function handleFilesUpload(files) {
+            Array.from(files).forEach(file => {
+                uploadSingleFile(file);
+            });
+        }
+
+        function uploadSingleFile(file) {
+            const list = document.getElementById('uploadList');
+            const rowId = 'upload-row-' + Math.random().toString(36).substr(2, 9);
             
-            // Show upload status
-            uploadStatus.classList.remove('hidden');
-            uploadResult.classList.add('hidden');
-            document.getElementById('file-name').textContent = file.name;
-            document.getElementById('file-size').textContent = formatFileSize(file.size);
-            uploadProgressBar.style.width = '0%';
-            uploadStatusText.textContent = 'Uploading...';
-            
-            // Create form data
+            const item = document.createElement('div');
+            item.id = rowId;
+            item.className = "glass-panel p-4 rounded-xl border border-gray-800 flex flex-col space-y-2";
+            item.innerHTML = `
+                <div class="flex justify-between items-center text-sm">
+                    <span class="font-medium text-gray-200 truncate max-w-xs">${file.name}</span>
+                    <span class="text-xs text-gray-500" id="${rowId}-percent">0%</span>
+                </div>
+                <div class="w-full bg-gray-950 h-2 rounded-full overflow-hidden">
+                    <div id="${rowId}-bar" class="bg-brand-500 h-full rounded-full transition-all duration-200" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between items-center text-xs text-gray-500">
+                    <span>${formatBytes(file.size)}</span>
+                    <span id="${rowId}-status">Uploading...</span>
+                </div>
+            `;
+            list.prepend(item);
+
             const formData = new FormData();
             formData.append('file', file);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `${API_BASE}/api/assets`, true);
             
-            try {
-                const xhr = new XMLHttpRequest();
-                
-                // Track upload progress
-                xhr.upload.addEventListener('progress', (e) => {
-                    if (e.lengthComputable) {
-                        const percentComplete = (e.loaded / e.total) * 100;
-                        uploadProgressBar.style.width = percentComplete + '%';
-                        uploadStatusText.textContent = `Uploading... ${Math.round(percentComplete)}%`;
-                    }
-                });
-                
-                // Handle completion
-                xhr.onload = function() {
-                    if (xhr.status === 200) {
-                        try {
-                            const response = JSON.parse(xhr.responseText);
-                            if (response.success) {
-                                uploadProgressBar.style.width = '100%';
-                                uploadStatusText.textContent = 'Upload complete!';
-                                uploadResult.classList.remove('hidden');
-                                publicUrlInput.value = response.data.publicUrl;
-                                copyUrlBtn.disabled = false;
-                            } else {
-                                throw new Error(response.error || 'Upload failed');
-                            }
-                        } catch (e) {
-                            uploadStatusText.textContent = 'Error: ' + e.message;
-                            uploadStatus.classList.add('upload-error');
-                        }
-                    } else {
-                        uploadStatusText.textContent = 'Error: Server returned status ' + xhr.status;
-                        uploadStatus.classList.add('upload-error');
-                    }
-                };
-                
-                // Handle error
-                xhr.onerror = function() {
-                    uploadStatusText.textContent = 'Error: Network error occurred';
-                    uploadStatus.classList.add('upload-error');
-                };
-                
-                // Send request
-                xhr.open('POST', '/api/assets', true);
-                xhr.send(formData);
-                
-            } catch (error) {
-                uploadStatusText.textContent = 'Error: ' + error.message;
-                uploadStatus.classList.add('upload-error');
-            }
-        }
-        
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-        
-        function copyToClipboard() {
-            const url = publicUrlInput.value;
-            if (!url) return;
-            
-            navigator.clipboard.writeText(url).then(() => {
-                const originalText = copyUrlBtn.textContent;
-                copyUrlBtn.textContent = 'Copied!';
-                copyUrlBtn.disabled = true;
-                
-                setTimeout(() => {
-                    copyUrlBtn.textContent = originalText;
-                    copyUrlBtn.disabled = false;
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy: ', err);
-                alert('Failed to copy URL');
+            // Set Headers
+            const headers = getAuthHeader();
+            Object.keys(headers).forEach(key => {
+                xhr.setRequestHeader(key, headers[key]);
             });
+
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    document.getElementById(`${rowId}-bar`).style.width = percent + '%';
+                    document.getElementById(`${rowId}-percent`).textContent = percent + '%';
+                }
+            });
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    try {
+                        const res = JSON.parse(xhr.responseText);
+                        if (res.success) {
+                            document.getElementById(`${rowId}-bar`).className = "bg-emerald-500 h-full rounded-full";
+                            document.getElementById(`${rowId}-percent`).className = "text-xs text-emerald-400";
+                            document.getElementById(`${rowId}-status`).innerHTML = `Uploaded! Link: <a href="${cleanUrl(res.data.publicUrl)}" target="_blank" class="text-brand-400 hover:underline font-mono">${cleanUrl(res.data.publicUrl)}</a>`;
+                            document.getElementById(`${rowId}-status`).className = "text-emerald-400 text-xs mt-1 block truncate";
+                        } else {
+                            throw new Error(res.error || 'Upload error');
+                        }
+                    } catch (err) {
+                        handleUploadFail(rowId, err.message);
+                    }
+                } else {
+                    handleUploadFail(rowId, `Server error code ${xhr.status}`);
+                }
+            };
+
+            xhr.onerror = function() {
+                handleUploadFail(rowId, 'Network error');
+            };
+
+            xhr.send(formData);
+        }
+
+        function handleUploadFail(rowId, errorMsg) {
+            document.getElementById(`${rowId}-bar`).className = "bg-red-500 h-full rounded-full";
+            document.getElementById(`${rowId}-percent`).className = "text-xs text-red-400";
+            document.getElementById(`${rowId}-status`).textContent = "Failed: " + errorMsg;
+            document.getElementById(`${rowId}-status`).className = "text-red-400";
+        }
+
+        function cleanUrl(url) {
+            if (!url) return url;
+            // Fix legacy database entries that were saved with broken 'http:/' or 'https:/' protocol slashes
+            if (url.startsWith('http:/') && !url.startsWith('http://')) {
+                return url.replace('http:/', 'http://');
+            }
+            if (url.startsWith('https:/') && !url.startsWith('https://')) {
+                return url.replace('https:/', 'https://');
+            }
+            return url;
+        }
+
+        function formatBytes(bytes, precision = 2) {
+            const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+            bytes = Math.max(bytes, 0);
+            const pow = Math.floor((bytes ? Math.log(bytes) : 0) / Math.log(1024));
+            const powIndex = Math.min(pow, units.length - 1);
+            bytes /= Math.pow(1024, powIndex);
+            return bytes.toFixed(precision) + ' ' + units[powIndex];
         }
     </script>
 </body>

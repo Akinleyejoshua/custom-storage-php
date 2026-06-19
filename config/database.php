@@ -1,10 +1,16 @@
 <?php
 // Database Configuration
 // Replace these with your InfinityFree MySQL credentials
-define('DB_HOST', 'sql207.infinityfree.com');  // Your InfinityFree MySQL host
-define('DB_USERNAME', 'if0_42222215');      // Your InfinityFree MySQL username
-define('DB_PASSWORD', '6dX59M2w3ljZge0');  // Your InfinityFree MySQL password
-define('DB_DATABASE', 'if0_42222215_media_gateway');  // Your InfinityFree database name
+// define('DB_HOST', 'sql207.infinityfree.com');  // Your InfinityFree MySQL host
+// define('DB_USERNAME', 'if0_42222215');      // Your InfinityFree MySQL username
+// define('DB_PASSWORD', '6dX59M2w3ljZge0');  // Your InfinityFree MySQL password
+// define('DB_DATABASE', 'if0_42222215_media_gateway');  // Your InfinityFree database name
+// define('DB_PORT', '3306');
+
+define('DB_HOST', 'localhost');  // Your InfinityFree MySQL host
+define('DB_USERNAME', 'root');      // Your InfinityFree MySQL username
+define('DB_PASSWORD', '');  // Your InfinityFree MySQL password
+define('DB_DATABASE', 'custom_storage');  // Your InfinityFree database name
 define('DB_PORT', '3306');
 
 // File Storage Configuration
@@ -62,7 +68,16 @@ function isAllowedMimeType($mimeType) {
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/plain'
+        'text/plain',
+        // Presentations
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        // Archives
+        'application/zip', 'application/x-zip-compressed', 'application/x-rar-compressed', 'application/x-7z-compressed', 'application/x-tar', 'application/x-gzip',
+        // Audio
+        'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/midi', 'audio/webm',
+        // Data/Code
+        'application/json', 'application/xml', 'text/xml', 'text/html', 'text/css', 'application/javascript'
     ];
     return in_array($mimeType, $allowedTypes);
 }
@@ -112,7 +127,29 @@ function getContentType($filename) {
         'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'doc' => 'application/msword',
         'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'txt' => 'text/plain'
+        'txt' => 'text/plain',
+        // Presentations
+        'ppt' => 'application/vnd.ms-powerpoint',
+        'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        // Archives
+        'zip' => 'application/zip',
+        'rar' => 'application/x-rar-compressed',
+        '7z' => 'application/x-7z-compressed',
+        'tar' => 'application/x-tar',
+        'gz' => 'application/x-gzip',
+        // Audio
+        'mp3' => 'audio/mpeg',
+        'wav' => 'audio/wav',
+        'ogg' => 'audio/ogg',
+        'mid' => 'audio/midi',
+        'midi' => 'audio/midi',
+        // Data/Code
+        'json' => 'application/json',
+        'xml' => 'application/xml',
+        'html' => 'text/html',
+        'htm' => 'text/html',
+        'css' => 'text/css',
+        'js' => 'application/javascript'
     ];
     return $mimeTypes[$ext] ?? 'application/octet-stream';
 }
@@ -133,7 +170,7 @@ function getDBConnection() {
         $pdo->exec("CREATE DATABASE IF NOT EXISTS " . DB_DATABASE . " CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         $pdo->exec("USE " . DB_DATABASE);
         
-        // Create table if it doesn't exist
+        // Create table if it doesn't exist (with user_email column)
         $createTableSQL = "CREATE TABLE IF NOT EXISTS media_assets (
             id INT AUTO_INCREMENT PRIMARY KEY,
             assetId VARCHAR(36) NOT NULL UNIQUE,
@@ -143,13 +180,26 @@ function getDBConnection() {
             fileSize INT NOT NULL,
             storagePath VARCHAR(255) NOT NULL,
             publicUrl VARCHAR(255) NOT NULL,
+            user_email VARCHAR(255) DEFAULT NULL,
             createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
             updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX (assetId),
-            INDEX (createdAt)
+            INDEX (createdAt),
+            INDEX (user_email)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
         
         $pdo->exec($createTableSQL);
+
+        // Run ALTER TABLE in case user_email column doesn't exist in an already created table
+        try {
+            // Check if column exists first
+            $checkColumn = $pdo->query("SHOW COLUMNS FROM media_assets LIKE 'user_email'")->fetch();
+            if (!$checkColumn) {
+                $pdo->exec("ALTER TABLE media_assets ADD COLUMN user_email VARCHAR(255) DEFAULT NULL AFTER publicUrl, ADD INDEX (user_email)");
+            }
+        } catch (PDOException $e) {
+            // Ignore error if column already exists
+        }
         
         return $pdo;
     } catch (PDOException $e) {
