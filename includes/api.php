@@ -86,6 +86,9 @@ try {
             case 'assets':
                 handleAssetsRequest($db, $requestMethod, $endpointParts);
                 break;
+            case 'folders':
+                handleFoldersRequest($db, $requestMethod, $endpointParts);
+                break;
             case 'public':
                 handlePublicRequest($db, $requestMethod, $endpointParts);
                 break;
@@ -132,6 +135,77 @@ function handleAuthRequest($requestMethod, $endpointParts) {
     }
 }
 
+// Handle /api/folders requests
+function handleFoldersRequest($db, $requestMethod, $endpointParts) {
+    $email = getAuthenticatedUserEmail();
+    
+    switch ($requestMethod) {
+        case 'GET':
+            $stmt = $db->prepare("SELECT * FROM folders WHERE user_email = ? ORDER BY name ASC");
+            $stmt->execute([$email]);
+            $folders = $stmt->fetchAll();
+            echo json_encode(['success' => true, 'data' => $folders]);
+            break;
+            
+        case 'POST':
+            $input = json_decode(file_get_contents('php://input'), true);
+            $name = trim($input['name'] ?? '');
+            
+            if (empty($name)) {
+                throw new Exception('Folder name is required', 400);
+            }
+            
+            $folderId = bin2hex(random_bytes(16));
+            
+            $stmt = $db->prepare("INSERT INTO folders (folderId, name, user_email) VALUES (?, ?, ?)");
+            $stmt->execute([$folderId, $name, $email]);
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Folder created successfully',
+                'data' => [
+                    'folderId' => $folderId,
+                    'name' => $name,
+                    'user_email' => $email
+                ]
+            ]);
+            break;
+            
+        case 'DELETE':
+            if (!isset($endpointParts[2])) {
+                throw new Exception('Folder ID is required for deletion', 400);
+            }
+            $folderId = $endpointParts[2];
+            
+            // Verify folder ownership
+            $stmt = $db->prepare("SELECT * FROM folders WHERE folderId = ? AND user_email = ?");
+            $stmt->execute([$folderId, $email]);
+            $folder = $stmt->fetch();
+            if (!$folder) {
+                throw new Exception('Folder not found or access denied', 404);
+            }
+            
+            // Update all files inside this folder to move them back to root (folderId = NULL)
+            // This leaves the actual files on disk and public URLs completely untouched!
+            $stmt = $db->prepare("UPDATE media_assets SET folderId = NULL WHERE folderId = ? AND user_email = ?");
+            $stmt->execute([$folderId, $email]);
+            
+            // Delete folder record
+            $stmt = $db->prepare("DELETE FROM folders WHERE folderId = ?");
+            $stmt->execute([$folderId]);
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Folder deleted successfully. Assets moved to root.',
+                'folderId' => $folderId
+            ]);
+            break;
+            
+        default:
+            throw new Exception('Method not allowed', 405);
+    }
+}
+
 // Handle /api/assets requests
 function handleAssetsRequest($db, $requestMethod, $endpointParts) {
     error_log("handleAssetsRequest called with method: " . $requestMethod . ", endpoint: " . implode('/', $endpointParts));
@@ -141,13 +215,21 @@ function handleAssetsRequest($db, $requestMethod, $endpointParts) {
             handleGetAssets($db, $endpointParts);
             break;
         case 'POST':
-            handleUploadAsset($db);
+            if (isset($endpointParts[2]) && $endpointParts[2] === 'move') {
+                handleBatchMoveAssets($db);
+            } elseif (isset($endpointParts[2]) && isset($endpointParts[3]) && $endpointParts[3] === 'move') {
+                handleMoveAsset($db, $endpointParts[2]);
+            } elseif (isset($endpointParts[2]) && isset($endpointParts[3]) && $endpointParts[3] === 'rename') {
+                handleRenameAsset($db, $endpointParts[2]);
+            } else {
+                handleUploadAsset($db);
+            }
             break;
         case 'DELETE':
             if (isset($endpointParts[2])) {
                 handleDeleteAsset($db, $endpointParts[2]);
             } else {
-                throw new Exception('Asset ID required for deletion', 400);
+                handleBatchDeleteAssets($db);
             }
             break;
         default:
@@ -171,7 +253,7 @@ function handlePublicRequest($db, $requestMethod, $endpointParts) {
 // Get all assets or a specific asset
 function handleGetAssets($db, $endpointParts) {
     $email = getAuthenticatedUserEmail();
-    $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 20;
+    $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 24;
     $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
     $offset = ($page - 1) * $limit;
     
@@ -191,14 +273,33 @@ function handleGetAssets($db, $endpointParts) {
             'data' => $asset
         ]);
     } else {
-        // Get all assets for this user (or legacy files without user email) with pagination
-        $stmt = $db->prepare("SELECT * FROM media_assets WHERE (user_email = ? OR user_email IS NULL) ORDER BY createdAt DESC LIMIT ? OFFSET ?");
-        $stmt->execute([$email, $limit, $offset]);
-        $assets = $stmt->fetchAll();
+        // Filter by folderId
+        $folderId = $_GET['folderId'] ?? null;
         
-        // Get total count for pagination
-        $countStmt = $db->prepare("SELECT COUNT(*) FROM media_assets WHERE (user_email = ? OR user_email IS NULL)");
-        $countStmt->execute([$email]);
+        if ($folderId === 'all') {
+            // Get all files regardless of folder
+            $stmt = $db->prepare("SELECT * FROM media_assets WHERE (user_email = ? OR user_email IS NULL) ORDER BY createdAt DESC LIMIT ? OFFSET ?");
+            $stmt->execute([$email, $limit, $offset]);
+            
+            $countStmt = $db->prepare("SELECT COUNT(*) FROM media_assets WHERE (user_email = ? OR user_email IS NULL)");
+            $countStmt->execute([$email]);
+        } elseif ($folderId !== null && $folderId !== '') {
+            // Get files inside the specific folder
+            $stmt = $db->prepare("SELECT * FROM media_assets WHERE (user_email = ? OR user_email IS NULL) AND folderId = ? ORDER BY createdAt DESC LIMIT ? OFFSET ?");
+            $stmt->execute([$email, $folderId, $limit, $offset]);
+            
+            $countStmt = $db->prepare("SELECT COUNT(*) FROM media_assets WHERE (user_email = ? OR user_email IS NULL) AND folderId = ?");
+            $countStmt->execute([$email, $folderId]);
+        } else {
+            // Default: show Root files only (where folderId is null)
+            $stmt = $db->prepare("SELECT * FROM media_assets WHERE (user_email = ? OR user_email IS NULL) AND folderId IS NULL ORDER BY createdAt DESC LIMIT ? OFFSET ?");
+            $stmt->execute([$email, $limit, $offset]);
+            
+            $countStmt = $db->prepare("SELECT COUNT(*) FROM media_assets WHERE (user_email = ? OR user_email IS NULL) AND folderId IS NULL");
+            $countStmt->execute([$email]);
+        }
+        
+        $assets = $stmt->fetchAll();
         $total = $countStmt->fetchColumn();
         
         echo json_encode([
@@ -213,6 +314,119 @@ function handleGetAssets($db, $endpointParts) {
         ]);
     }
 }
+
+// Handle batch moving assets - updates folderId metadata only
+function handleBatchMoveAssets($db) {
+    $email = getAuthenticatedUserEmail();
+    
+    $input = json_decode(file_get_contents('php://input'), true);
+    $assetIds = $input['assetIds'] ?? [];
+    $folderId = $input['folderId'] ?? null;
+    
+    if (empty($assetIds) || !is_array($assetIds)) {
+        throw new Exception('Asset IDs are required', 400);
+    }
+    
+    if (empty($folderId)) {
+        $folderId = null;
+    }
+    
+    if ($folderId !== null) {
+        // Verify folder exists and belongs to the user
+        $stmt = $db->prepare("SELECT * FROM folders WHERE folderId = ? AND user_email = ?");
+        $stmt->execute([$folderId, $email]);
+        $folder = $stmt->fetch();
+        if (!$folder) {
+            throw new Exception('Target folder not found', 404);
+        }
+    }
+    
+    // Batch update the asset records
+    $placeholders = implode(',', array_fill(0, count($assetIds), '?'));
+    $sql = "UPDATE media_assets SET folderId = ? WHERE (user_email = ? OR user_email IS NULL) AND assetId IN ($placeholders)";
+    
+    $stmt = $db->prepare($sql);
+    $params = array_merge([$folderId, $email], $assetIds);
+    $stmt->execute($params);
+    
+    echo json_encode([
+        'success' => true,
+        'message' => count($assetIds) . ' assets moved successfully',
+        'folderId' => $folderId
+    ]);
+}
+
+// Handle moving assets inside database metadata - leaving physical paths identical!
+function handleMoveAsset($db, $assetId) {
+    $email = getAuthenticatedUserEmail();
+    
+    // Verify asset exists and belongs to the user
+    $stmt = $db->prepare("SELECT * FROM media_assets WHERE assetId = ? AND user_email = ?");
+    $stmt->execute([$assetId, $email]);
+    $asset = $stmt->fetch();
+    if (!$asset) {
+        throw new Exception('Asset not found or access denied', 404);
+    }
+    
+    $input = json_decode(file_get_contents('php://input'), true);
+    $folderId = $input['folderId'] ?? null;
+    
+    if (empty($folderId)) {
+        $folderId = null;
+    }
+    
+    if ($folderId !== null) {
+        // Verify folder exists and belongs to the user
+        $stmt = $db->prepare("SELECT * FROM folders WHERE folderId = ? AND user_email = ?");
+        $stmt->execute([$folderId, $email]);
+        $folder = $stmt->fetch();
+        if (!$folder) {
+            throw new Exception('Target folder not found', 404);
+        }
+    }
+    
+    // Update folderId only, keeping files on disk and publicUrls identical!
+    $stmt = $db->prepare("UPDATE media_assets SET folderId = ? WHERE assetId = ? AND user_email = ?");
+    $stmt->execute([$folderId, $assetId, $email]);
+    
+    echo json_encode([
+        'success' => true,
+        'message' => 'Asset moved successfully',
+        'assetId' => $assetId,
+        'folderId' => $folderId
+    ]);
+}
+
+// Handle renaming asset metadata in database
+function handleRenameAsset($db, $assetId) {
+    $email = getAuthenticatedUserEmail();
+    
+    // Verify asset exists and belongs to the user
+    $stmt = $db->prepare("SELECT * FROM media_assets WHERE assetId = ? AND user_email = ?");
+    $stmt->execute([$assetId, $email]);
+    $asset = $stmt->fetch();
+    if (!$asset) {
+        throw new Exception('Asset not found or access denied', 404);
+    }
+    
+    $input = json_decode(file_get_contents('php://input'), true);
+    $filename = $input['filename'] ?? null;
+    
+    if (empty($filename) || trim($filename) === '') {
+        throw new Exception('Filename cannot be empty', 400);
+    }
+    
+    $stmt = $db->prepare("UPDATE media_assets SET originalFilename = ? WHERE assetId = ? AND user_email = ?");
+    $stmt->execute([trim($filename), $assetId, $email]);
+    
+    echo json_encode([
+        'success' => true,
+        'message' => 'Asset renamed successfully',
+        'assetId' => $assetId,
+        'filename' => trim($filename)
+    ]);
+}
+
 
 // Handle asset deletion
 function handleDeleteAsset($db, $assetId) {
@@ -248,6 +462,53 @@ function handleDeleteAsset($db, $assetId) {
         'assetId' => $assetId
     ]);
 }
+
+// Handle batch asset deletion
+function handleBatchDeleteAssets($db) {
+    $email = getAuthenticatedUserEmail();
+    
+    $input = json_decode(file_get_contents('php://input'), true);
+    $assetIds = $input['assetIds'] ?? [];
+    
+    if (empty($assetIds) || !is_array($assetIds)) {
+        throw new Exception('Asset IDs are required for batch deletion', 400);
+    }
+    
+    // Select all these assets to verify ownership and get storage paths
+    $placeholders = implode(',', array_fill(0, count($assetIds), '?'));
+    $sql = "SELECT * FROM media_assets WHERE assetId IN ($placeholders)";
+    $stmt = $db->prepare($sql);
+    $stmt->execute($assetIds);
+    $assets = $stmt->fetchAll();
+    
+    $verifiedIds = [];
+    foreach ($assets as $asset) {
+        if ($asset['user_email'] !== null && $asset['user_email'] !== $email) {
+            throw new Exception('Unauthorized: You do not own all selected assets', 403);
+        }
+        
+        // Delete physical file
+        $filePath = UPLOAD_DIR . '/' . $asset['storagePath'];
+        if (file_exists($filePath)) {
+            @unlink($filePath);
+        }
+        $verifiedIds[] = $asset['assetId'];
+    }
+    
+    if (!empty($verifiedIds)) {
+        $deletePlaceholders = implode(',', array_fill(0, count($verifiedIds), '?'));
+        $deleteSql = "DELETE FROM media_assets WHERE assetId IN ($deletePlaceholders)";
+        $deleteStmt = $db->prepare($deleteSql);
+        $deleteStmt->execute($verifiedIds);
+    }
+    
+    echo json_encode([
+        'success' => true,
+        'message' => count($verifiedIds) . ' assets deleted successfully',
+        'assetIds' => $verifiedIds
+    ]);
+}
+
 
 // Handle file upload
 function handleUploadAsset($db) {
@@ -329,8 +590,14 @@ function handleUploadAsset($db) {
         $publicUrl = preg_replace('#/+#', '/', $publicUrl);
     }
     
+    // Optional folderId parameter
+    $folderId = $_POST['folderId'] ?? null;
+    if (empty($folderId)) {
+        $folderId = null;
+    }
+    
     // Store in database
-    $stmt = $db->prepare("INSERT INTO media_assets (assetId, originalFilename, secureFilename, mimeType, fileSize, storagePath, publicUrl, user_email) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt = $db->prepare("INSERT INTO media_assets (assetId, originalFilename, secureFilename, mimeType, fileSize, storagePath, publicUrl, user_email, folderId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $stmt->execute([
         $assetId,
         $file['name'],
@@ -339,7 +606,8 @@ function handleUploadAsset($db) {
         $file['size'],
         $secureFilename,
         $publicUrl,
-        $email
+        $email,
+        $folderId
     ]);
     
     // Get the inserted asset by assetId (not id)

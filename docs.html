@@ -299,6 +299,184 @@
             </div>
         </div>
 
+        <!-- Folders Endpoints -->
+        <div class="glass-panel rounded-2xl border border-gray-800/80 mb-6 overflow-hidden">
+            <div class="p-6 border-b border-gray-850/80 bg-gray-900/40">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3">
+                        <span class="bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold px-3 py-1.5 rounded-lg">GET</span>
+                        <h3 class="text-lg font-bold text-gray-200">/api/folders</h3>
+                    </div>
+                    <span class="text-xs text-gray-500 font-semibold uppercase tracking-wider">List Folders</span>
+                </div>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-gray-400">Retrieve all virtual folders created by the authenticated workspace email.</p>
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Success Response (200)</h4>
+                <pre class="bg-gray-950 text-gray-300 p-4 rounded-xl border border-gray-900 text-xs font-mono">{
+  "success": true,
+  "data": [
+    {
+      "folderId": "3e9b17ab-4b2e-4bca-8eb1-cf9a1c6a7e0a",
+      "name": "Marketing",
+      "createdAt": "2026-06-19 19:00:00"
+    }
+  ]
+}</pre>
+            </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl border border-gray-800/80 mb-6 overflow-hidden">
+            <div class="p-6 border-b border-gray-850/80 bg-gray-900/40">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3">
+                        <span class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-lg">POST</span>
+                        <h3 class="text-lg font-bold text-gray-200">/api/folders</h3>
+                    </div>
+                    <span class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Create Folder</span>
+                </div>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-gray-400">Creates a new virtual folder for organizing your workspace assets.</p>
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Request Payload (JSON)</h4>
+                <pre class="bg-gray-950 text-gray-300 p-4 rounded-xl border border-gray-900 text-xs font-mono">{
+  "name": "Design Assets"
+}</pre>
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Success Response (200)</h4>
+                <pre class="bg-gray-950 text-gray-300 p-4 rounded-xl border border-gray-900 text-xs font-mono">{
+  "success": true,
+  "message": "Folder created successfully",
+  "folderId": "5f1a3b8c-1e2a-4bcd-86ef-d78a9c2e0b3c",
+  "name": "Design Assets"
+}</pre>
+            </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl border border-gray-800/80 mb-6 overflow-hidden">
+            <div class="p-6 border-b border-gray-850/80 bg-gray-900/40">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3">
+                        <span class="bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold px-3 py-1.5 rounded-lg">DELETE</span>
+                        <h3 class="text-lg font-bold text-gray-200">/api/folders/{folderId}</h3>
+                    </div>
+                    <span class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Delete Folder</span>
+                </div>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-gray-400">Permanently delete a folder. All files contained inside the folder will automatically move back to the Root directory (none are deleted from storage or database).</p>
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Success Response (200)</h4>
+                <pre class="bg-gray-950 text-gray-300 p-4 rounded-xl border border-gray-900 text-xs font-mono">{
+  "success": true,
+  "message": "Folder deleted successfully. Assets moved to root.",
+  "folderId": "5f1a3b8c-1e2a-4bcd-86ef-d78a9c2e0b3c"
+}</pre>
+            </div>
+        </div>
+
+        <!-- Asset Moving and Renaming -->
+        <div class="glass-panel rounded-2xl border border-gray-800/80 mb-6 overflow-hidden">
+            <div class="p-6 border-b border-gray-850/80 bg-gray-900/40">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3">
+                        <span class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-lg">POST</span>
+                        <h3 class="text-lg font-bold text-gray-200">/api/assets/{assetId}/move</h3>
+                    </div>
+                    <span class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Move File to Folder</span>
+                </div>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-gray-400">Move an asset to a virtual folder. This only modifies the file's folder metadata in the database; the file's disk storage path and public URL remain unchanged.</p>
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Request Payload (JSON)</h4>
+                <pre class="bg-gray-950 text-gray-300 p-4 rounded-xl border border-gray-900 text-xs font-mono">{
+  "folderId": "5f1a3b8c-1e2a-4bcd-86ef-d78a9c2e0b3c"  // Use null to move file back to root
+}</pre>
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Success Response (200)</h4>
+                <pre class="bg-gray-950 text-gray-300 p-4 rounded-xl border border-gray-900 text-xs font-mono">{
+  "success": true,
+  "message": "Asset moved successfully",
+  "assetId": "48b17b2bca6937bc38abda8c9735d1f1",
+  "folderId": "5f1a3b8c-1e2a-4bcd-86ef-d78a9c2e0b3c"
+}</pre>
+            </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl border border-gray-800/80 mb-6 overflow-hidden">
+            <div class="p-6 border-b border-gray-850/80 bg-gray-900/40">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3">
+                        <span class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-lg">POST</span>
+                        <h3 class="text-lg font-bold text-gray-200">/api/assets/move</h3>
+                    </div>
+                    <span class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Batch Move Files</span>
+                </div>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-gray-400">Move multiple assets in a single batch request to a virtual folder or root level.</p>
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Request Payload (JSON)</h4>
+                <pre class="bg-gray-950 text-gray-300 p-4 rounded-xl border border-gray-900 text-xs font-mono">{
+  "assetIds": ["id1", "id2"],
+  "folderId": "5f1a3b8c-1e2a-4bcd-86ef-d78a9c2e0b3c"  // Or null for Root
+}</pre>
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Success Response (200)</h4>
+                <pre class="bg-gray-950 text-gray-300 p-4 rounded-xl border border-gray-900 text-xs font-mono">{
+  "success": true,
+  "message": "2 assets moved successfully",
+  "folderId": "5f1a3b8c-1e2a-4bcd-86ef-d78a9c2e0b3c"
+}</pre>
+            </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl border border-gray-800/80 mb-6 overflow-hidden">
+            <div class="p-6 border-b border-gray-850/80 bg-gray-900/40">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3">
+                        <span class="bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold px-3 py-1.5 rounded-lg">DELETE</span>
+                        <h3 class="text-lg font-bold text-gray-200">/api/assets</h3>
+                    </div>
+                    <span class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Batch Delete Files</span>
+                </div>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-gray-400">Permanently delete multiple assets from storage and database indexing in a single request.</p>
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Request Payload (JSON)</h4>
+                <pre class="bg-gray-950 text-gray-300 p-4 rounded-xl border border-gray-900 text-xs font-mono">{
+  "assetIds": ["id1", "id2"]
+}</pre>
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Success Response (200)</h4>
+                <pre class="bg-gray-950 text-gray-300 p-4 rounded-xl border border-gray-900 text-xs font-mono">{
+  "success": true,
+  "message": "2 assets deleted successfully",
+  "assetIds": ["id1", "id2"]
+}</pre>
+            </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl border border-gray-800/80 mb-6 overflow-hidden">
+            <div class="p-6 border-b border-gray-850/80 bg-gray-900/40">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3">
+                        <span class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-lg">POST</span>
+                        <h3 class="text-lg font-bold text-gray-200">/api/assets/{assetId}/rename</h3>
+                    </div>
+                    <span class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Rename File Metadata</span>
+                </div>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-gray-400">Rename the original filename attribute of an asset in the database. This does not change the physical storage path or the public URL.</p>
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Request Payload (JSON)</h4>
+                <pre class="bg-gray-950 text-gray-300 p-4 rounded-xl border border-gray-900 text-xs font-mono">{
+  "filename": "new_invoice_Q2.xlsx"
+}</pre>
+                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Success Response (200)</h4>
+                <pre class="bg-gray-950 text-gray-300 p-4 rounded-xl border border-gray-900 text-xs font-mono">{
+  "success": true,
+  "message": "Asset renamed successfully",
+  "assetId": "48b17b2bca6937bc38abda8c9735d1f1",
+  "filename": "new_invoice_Q2.xlsx"
+}</pre>
+            </div>
+        </div>
+
         <!-- Quick Start cURL -->
         <div class="glass-panel rounded-2xl border border-gray-800/80 overflow-hidden">
             <div class="p-6 border-b border-gray-850/80 bg-gray-900/40">

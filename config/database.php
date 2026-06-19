@@ -170,7 +170,7 @@ function getDBConnection() {
         $pdo->exec("CREATE DATABASE IF NOT EXISTS " . DB_DATABASE . " CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         $pdo->exec("USE " . DB_DATABASE);
         
-        // Create table if it doesn't exist (with user_email column)
+        // Create table if it doesn't exist (with user_email and folderId columns)
         $createTableSQL = "CREATE TABLE IF NOT EXISTS media_assets (
             id INT AUTO_INCREMENT PRIMARY KEY,
             assetId VARCHAR(36) NOT NULL UNIQUE,
@@ -181,24 +181,46 @@ function getDBConnection() {
             storagePath VARCHAR(255) NOT NULL,
             publicUrl VARCHAR(255) NOT NULL,
             user_email VARCHAR(255) DEFAULT NULL,
+            folderId VARCHAR(36) DEFAULT NULL,
             createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
             updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             INDEX (assetId),
             INDEX (createdAt),
-            INDEX (user_email)
+            INDEX (user_email),
+            INDEX (folderId)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
         
         $pdo->exec($createTableSQL);
 
-        // Run ALTER TABLE in case user_email column doesn't exist in an already created table
+        // Create folders table if it doesn't exist
+        $createFoldersTableSQL = "CREATE TABLE IF NOT EXISTS folders (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            folderId VARCHAR(36) NOT NULL UNIQUE,
+            name VARCHAR(255) NOT NULL,
+            user_email VARCHAR(255) NOT NULL,
+            createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX (folderId),
+            INDEX (user_email)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+        
+        $pdo->exec($createFoldersTableSQL);
+
+        // Run ALTER TABLE to add missing columns in case tables already exist
         try {
-            // Check if column exists first
-            $checkColumn = $pdo->query("SHOW COLUMNS FROM media_assets LIKE 'user_email'")->fetch();
-            if (!$checkColumn) {
+            // Check if user_email exists
+            $checkUserEmail = $pdo->query("SHOW COLUMNS FROM media_assets LIKE 'user_email'")->fetch();
+            if (!$checkUserEmail) {
                 $pdo->exec("ALTER TABLE media_assets ADD COLUMN user_email VARCHAR(255) DEFAULT NULL AFTER publicUrl, ADD INDEX (user_email)");
             }
+            
+            // Check if folderId exists
+            $checkFolderId = $pdo->query("SHOW COLUMNS FROM media_assets LIKE 'folderId'")->fetch();
+            if (!$checkFolderId) {
+                $pdo->exec("ALTER TABLE media_assets ADD COLUMN folderId VARCHAR(36) DEFAULT NULL AFTER user_email, ADD INDEX (folderId)");
+            }
         } catch (PDOException $e) {
-            // Ignore error if column already exists
+            // Ignore errors
         }
         
         return $pdo;
