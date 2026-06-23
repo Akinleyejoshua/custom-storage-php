@@ -165,6 +165,8 @@
                                 File</a>
                             <a href="docs.html"
                                 class="px-4 py-2 rounded-lg text-gray-400 hover:text-gray-200 transition">API Docs</a>
+                            <a href="admin.html"
+                                class="px-4 py-2 rounded-lg text-gray-400 hover:text-gray-200 transition">Admin Panel</a>
                         </nav>
                         <div class="h-6 w-px bg-gray-800 hidden md:block"></div>
                         <div class="flex items-center space-x-3">
@@ -172,6 +174,15 @@
                                 <p class="text-xs text-gray-500">Connected space</p>
                                 <p class="text-sm font-semibold text-gray-300" id="userEmailDisplay">...</p>
                             </div>
+                            <button onclick="openDeactivateModal()"
+                                class="p-2.5 bg-gray-900 border border-gray-800 hover:border-red-500/30 hover:bg-red-500/10 rounded-xl text-gray-400 hover:text-red-500 transition duration-150"
+                                title="Deactivate Space">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                    </path>
+                                </svg>
+                            </button>
                             <button onclick="handleLogout()"
                                 class="p-2.5 bg-gray-900 border border-gray-800 hover:border-red-500/30 hover:bg-red-500/10 rounded-xl text-gray-400 hover:text-red-500 transition duration-150"
                                 title="Disconnect Space">
@@ -213,6 +224,9 @@
                         class="px-4 py-3 rounded-xl text-gray-400 hover:text-gray-200 transition">Upload File</a>
                     <a href="docs.html" class="px-4 py-3 rounded-xl text-gray-400 hover:text-gray-200 transition">API
                         Docs</a>
+                    <a href="admin.html" class="px-4 py-3 rounded-xl text-gray-400 hover:text-gray-200 transition font-medium">Admin
+                        Panel</a>
+                    <a href="#" onclick="openDeactivateModal(); toggleMobileMenu()" class="px-4 py-3 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition font-medium">Deactivate Space</a>
                 </nav>
             </div>
         </div>
@@ -222,37 +236,109 @@
 
             <!-- Gallery Tab -->
             <div id="tab-gallery">
+                <!-- Storage Quota Widget -->
+                <div class="glass-panel p-6 rounded-2xl border border-gray-800/80 mb-6 relative overflow-hidden">
+                    <div class="absolute -top-10 -right-10 w-32 h-32 bg-brand-500 rounded-full blur-[80px] opacity-20"></div>
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-200">Workspace Storage</h3>
+                            <p class="text-xs text-gray-500 mt-1">Shared quota across all categorized assets</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xl font-bold text-white" id="storage-used-display">0 B</span>
+                            <span class="text-sm text-gray-500 font-medium">/ Unlimited Used</span>
+                            <span class="ml-2 px-2 py-0.5 bg-brand-500/10 border border-brand-500/20 text-brand-400 text-xs font-bold rounded-lg" id="storage-percentage-badge">Unlimited</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Premium Multi-segment Progress Bar -->
+                    <div class="w-full h-3 bg-gray-900 rounded-full overflow-hidden flex mb-4">
+                        <div id="bar-image" class="h-full bg-purple-500 transition-all duration-500" style="width: 0%"></div>
+                        <div id="bar-video" class="h-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
+                        <div id="bar-document" class="h-full bg-emerald-500 transition-all duration-500" style="width: 0%"></div>
+                        <div id="bar-archive" class="h-full bg-yellow-500 transition-all duration-500" style="width: 0%"></div>
+                        <div id="bar-audio" class="h-full bg-pink-500 transition-all duration-500" style="width: 0%"></div>
+                        <div id="bar-other" class="h-full bg-gray-500 transition-all duration-500" style="width: 0%"></div>
+                    </div>
+
+                    <!-- Progress Legend -->
+                    <div class="flex flex-wrap gap-x-6 gap-y-2 text-xs">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                            <span class="text-gray-400">Images</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                            <span class="text-gray-400">Videos</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                            <span class="text-gray-400">Documents</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
+                            <span class="text-gray-400">Archives</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-pink-500"></span>
+                            <span class="text-gray-400">Audio</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-gray-500"></span>
+                            <span class="text-gray-400">Other</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Stats Overview -->
                 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
                     <!-- Total Counter -->
-                    <div class="glass-panel p-4 rounded-2xl border border-gray-800/80">
-                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Assets</p>
-                        <p class="text-2xl font-bold text-white mt-1" id="stat-total">0</p>
+                    <div class="glass-panel p-4 rounded-2xl border border-gray-800/80 flex flex-col justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Assets</p>
+                            <p class="text-2xl font-bold text-white mt-1" id="stat-total">0</p>
+                        </div>
+                        <p class="text-[10px] text-gray-500 mt-2 font-mono" id="stat-total-size">0 B (0%)</p>
                     </div>
                     <!-- Images Counter -->
-                    <div class="glass-panel p-4 rounded-2xl border border-gray-800/80">
-                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Images</p>
-                        <p class="text-2xl font-bold text-purple-400 mt-1" id="stat-images">0</p>
+                    <div class="glass-panel p-4 rounded-2xl border border-gray-800/80 flex flex-col justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Images</p>
+                            <p class="text-2xl font-bold text-purple-400 mt-1" id="stat-images">0</p>
+                        </div>
+                        <p class="text-[10px] text-gray-500 mt-2 font-mono" id="stat-images-size">0 B (0%)</p>
                     </div>
                     <!-- Videos Counter -->
-                    <div class="glass-panel p-4 rounded-2xl border border-gray-800/80">
-                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Videos</p>
-                        <p class="text-2xl font-bold text-blue-400 mt-1" id="stat-videos">0</p>
+                    <div class="glass-panel p-4 rounded-2xl border border-gray-800/80 flex flex-col justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Videos</p>
+                            <p class="text-2xl font-bold text-blue-400 mt-1" id="stat-videos">0</p>
+                        </div>
+                        <p class="text-[10px] text-gray-500 mt-2 font-mono" id="stat-videos-size">0 B (0%)</p>
                     </div>
                     <!-- Documents Counter -->
-                    <div class="glass-panel p-4 rounded-2xl border border-gray-800/80">
-                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Documents</p>
-                        <p class="text-2xl font-bold text-emerald-400 mt-1" id="stat-docs">0</p>
+                    <div class="glass-panel p-4 rounded-2xl border border-gray-800/80 flex flex-col justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Documents</p>
+                            <p class="text-2xl font-bold text-emerald-400 mt-1" id="stat-docs">0</p>
+                        </div>
+                        <p class="text-[10px] text-gray-500 mt-2 font-mono" id="stat-docs-size">0 B (0%)</p>
                     </div>
                     <!-- Archives Counter -->
-                    <div class="glass-panel p-4 rounded-2xl border border-gray-800/80">
-                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Archives</p>
-                        <p class="text-2xl font-bold text-yellow-400 mt-1" id="stat-archives">0</p>
+                    <div class="glass-panel p-4 rounded-2xl border border-gray-800/80 flex flex-col justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Archives</p>
+                            <p class="text-2xl font-bold text-yellow-400 mt-1" id="stat-archives">0</p>
+                        </div>
+                        <p class="text-[10px] text-gray-500 mt-2 font-mono" id="stat-archives-size">0 B (0%)</p>
                     </div>
                     <!-- Audio Counter -->
-                    <div class="glass-panel p-4 rounded-2xl border border-gray-800/80 col-span-2 sm:col-span-1">
-                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Audio</p>
-                        <p class="text-2xl font-bold text-pink-400 mt-1" id="stat-audio">0</p>
+                    <div class="glass-panel p-4 rounded-2xl border border-gray-800/80 col-span-2 sm:col-span-1 flex flex-col justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Audio</p>
+                            <p class="text-2xl font-bold text-pink-400 mt-1" id="stat-audio">0</p>
+                        </div>
+                        <p class="text-[10px] text-gray-500 mt-2 font-mono" id="stat-audio-size">0 B (0%)</p>
                     </div>
                 </div>
 
@@ -517,6 +603,50 @@
             </div>
         </div>
     </div>
+    
+    <!-- Deactivate Space Modal -->
+    <div id="deactivateModal"
+        class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-md rounded-2xl p-8 shadow-2xl relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-red-500 rounded-full blur-[80px] opacity-20"></div>
+
+            <div class="text-center mb-6">
+                <div class="inline-flex p-3 bg-red-500/10 rounded-2xl mb-4 border border-red-500/20">
+                    <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                        </path>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-200">Deactivate Space</h3>
+                <p class="text-gray-400 mt-2 text-sm">This will soft-delete your account space. Admins can recover this space later.</p>
+            </div>
+
+            <div class="space-y-4">
+                <div class="p-4 bg-gray-950/60 border border-gray-900 rounded-xl">
+                    <label class="flex items-start space-x-3 cursor-pointer">
+                        <input type="checkbox" id="keepStorageCheckbox" checked
+                            class="mt-1 h-4 w-4 rounded border-gray-800 bg-gray-900 text-brand-500 focus:ring-brand-500 focus:ring-offset-gray-950">
+                        <div>
+                            <span class="text-sm font-semibold text-gray-200 block">Keep storage intact</span>
+                            <span class="text-xs text-gray-500 block mt-0.5">Your files and folders remain on the server. All public share links will continue working.</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="flex space-x-3">
+                    <button onclick="closeDeactivateModal()"
+                        class="flex-1 py-2.5 px-4 bg-gray-900 hover:bg-gray-850 border border-gray-800 text-gray-300 font-semibold rounded-xl transition text-sm">
+                        Cancel
+                    </button>
+                    <button onclick="confirmDeactivateSpace()"
+                        class="flex-1 py-2.5 px-4 bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-semibold rounded-xl transition text-sm shadow-lg shadow-red-500/20">
+                        Deactivate
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Notification Toast -->
     <div id="toast"
@@ -574,7 +704,23 @@
         document.addEventListener('DOMContentLoaded', () => {
             checkAuth();
             setupDragAndDrop();
+            trackVisit();
         });
+
+        async function trackVisit() {
+            if (localStorage.getItem('custom_gateway_visit_logged') === 'true') {
+                return;
+            }
+            try {
+                const response = await fetch(`${API_BASE}/api/track`, { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    localStorage.setItem('custom_gateway_visit_logged', 'true');
+                }
+            } catch (err) {
+                console.error('Visit tracking failed:', err);
+            }
+        }
 
         // Auth management
         function checkAuth() {
@@ -624,6 +770,41 @@
             localStorage.removeItem('custom_gateway_email');
             checkAuth();
             showToast('Logged out of workspace.', 'info');
+        }
+
+        function openDeactivateModal() {
+            document.getElementById('deactivateModal').classList.remove('hidden');
+        }
+
+        function closeDeactivateModal() {
+            document.getElementById('deactivateModal').classList.add('hidden');
+        }
+
+        async function confirmDeactivateSpace() {
+            const keepStorage = document.getElementById('keepStorageCheckbox').checked;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/soft-delete`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        ...getAuthHeader()
+                    },
+                    body: JSON.stringify({ keep_storage: keepStorage })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    closeDeactivateModal();
+                    localStorage.removeItem('custom_gateway_email');
+                    checkAuth();
+                    showToast('Space deactivated successfully.', 'info');
+                } else {
+                    showToast(result.error || 'Deactivation failed.', 'error');
+                }
+            } catch (err) {
+                showToast('Failed to connect to API.', 'error');
+            }
         }
 
         function getAuthHeader() {
@@ -722,7 +903,7 @@
                     assetsList = assets;
                 }
 
-                updateStats(assetsList);
+                await updateStats();
                 renderGallery();
 
                 if (assetsList.length === 0) {
@@ -767,20 +948,54 @@
         }
 
         // Stats counter
-        function updateStats(assets) {
-            document.getElementById('stat-total').textContent = assets.length;
+        // Stats counter
+        async function updateStats() {
+            try {
+                const response = await fetch(`${API_BASE}/api/assets/stats`, {
+                    headers: getAuthHeader()
+                });
+                if (!response.ok) throw new Error('Could not pull storage stats');
+                const result = await response.json();
+                if (!result.success) return;
+                
+                const stats = result.data;
+                const totalUsed = stats.totalSize;
+                
+                // Update workspace storage card
+                document.getElementById('storage-used-display').textContent = formatBytes(totalUsed);
+                document.getElementById('storage-percentage-badge').textContent = `Unlimited`;
+                
+                const getPercentOfTotal = (size) => {
+                    if (totalUsed === 0) return 0;
+                    return (size / totalUsed) * 100;
+                };
 
-            const images = assets.filter(a => isType(a.mimeType, 'image')).length;
-            const videos = assets.filter(a => isType(a.mimeType, 'video')).length;
-            const docs = assets.filter(a => isType(a.mimeType, 'document')).length;
-            const archives = assets.filter(a => isType(a.mimeType, 'archive')).length;
-            const audio = assets.filter(a => isType(a.mimeType, 'audio')).length;
+                // Segment widths representing category portions relative to total used
+                document.getElementById('bar-image').style.width = `${getPercentOfTotal(stats.image.size)}%`;
+                document.getElementById('bar-video').style.width = `${getPercentOfTotal(stats.video.size)}%`;
+                document.getElementById('bar-document').style.width = `${getPercentOfTotal(stats.document.size)}%`;
+                document.getElementById('bar-archive').style.width = `${getPercentOfTotal(stats.archive.size)}%`;
+                document.getElementById('bar-audio').style.width = `${getPercentOfTotal(stats.audio.size)}%`;
+                document.getElementById('bar-other').style.width = `${getPercentOfTotal(stats.other.size)}%`;
+                
+                // Update overall / categories count
+                document.getElementById('stat-total').textContent = stats.totalCount;
+                document.getElementById('stat-images').textContent = stats.image.count;
+                document.getElementById('stat-videos').textContent = stats.video.count;
+                document.getElementById('stat-docs').textContent = stats.document.count;
+                document.getElementById('stat-archives').textContent = stats.archive.count;
+                document.getElementById('stat-audio').textContent = stats.audio.count;
 
-            document.getElementById('stat-images').textContent = images;
-            document.getElementById('stat-videos').textContent = videos;
-            document.getElementById('stat-docs').textContent = docs;
-            document.getElementById('stat-archives').textContent = archives;
-            document.getElementById('stat-audio').textContent = audio;
+                // Update size and percentage labels
+                document.getElementById('stat-total-size').textContent = `${formatBytes(totalUsed)} (Total Size)`;
+                document.getElementById('stat-images-size').textContent = `${formatBytes(stats.image.size)} (${getPercentOfTotal(stats.image.size).toFixed(1)}% of total)`;
+                document.getElementById('stat-videos-size').textContent = `${formatBytes(stats.video.size)} (${getPercentOfTotal(stats.video.size).toFixed(1)}% of total)`;
+                document.getElementById('stat-docs-size').textContent = `${formatBytes(stats.document.size)} (${getPercentOfTotal(stats.document.size).toFixed(1)}% of total)`;
+                document.getElementById('stat-archives-size').textContent = `${formatBytes(stats.archive.size)} (${getPercentOfTotal(stats.archive.size).toFixed(1)}% of total)`;
+                document.getElementById('stat-audio-size').textContent = `${formatBytes(stats.audio.size)} (${getPercentOfTotal(stats.audio.size).toFixed(1)}% of total)`;
+            } catch (err) {
+                console.error('Error loading stats:', err);
+            }
         }
 
         function isType(mime, category) {
@@ -1327,20 +1542,39 @@
             }
         }
 
+        const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
+        const uploadQueue = {};
+
         function handleFilesUpload(files) {
             Array.from(files).forEach(file => {
                 uploadSingleFile(file);
             });
         }
 
-        function uploadSingleFile(file) {
-            const list = document.getElementById('uploadList');
-            const rowId = 'upload-row-' + Math.random().toString(36).substr(2, 9);
+        // Generate a safe unique string identifier for a file
+        function getFileId(file) {
+            const cleanName = file.name.replace(/[^a-zA-Z0-9]/g, '');
+            return `file${cleanName}${file.size}${file.lastModified}`;
+        }
 
-            // Create progress row item
-            const item = document.createElement('div');
-            item.id = rowId;
-            item.className = "glass-panel p-4 rounded-xl border border-gray-800 flex flex-col space-y-2";
+        function uploadSingleFile(file, existingRowId = null) {
+            const list = document.getElementById('uploadList');
+            const fileId = getFileId(file);
+            const rowId = existingRowId || ('upload-row-' + Math.random().toString(36).substr(2, 9));
+            
+            // Store file reference in case of retry/resume
+            uploadQueue[rowId] = file;
+
+            let item = document.getElementById(rowId);
+            if (!item) {
+                // Create progress row item
+                item = document.createElement('div');
+                item.id = rowId;
+                item.className = "glass-panel p-4 rounded-xl border border-gray-800 flex flex-col space-y-2";
+                list.prepend(item);
+            }
+            
+            // Reset to preparing/uploading state
             item.innerHTML = `
                 <div class="flex justify-between items-center text-sm">
                     <span class="font-medium text-gray-200 truncate max-w-xs">${file.name}</span>
@@ -1351,31 +1585,61 @@
                 </div>
                 <div class="flex justify-between items-center text-xs text-gray-500">
                     <span>${formatBytes(file.size)}</span>
-                    <span id="${rowId}-status">Uploading...</span>
+                    <span id="${rowId}-status" class="text-gray-500">Preparing...</span>
                 </div>
             `;
-            list.prepend(item);
 
-            const formData = new FormData();
-            formData.append('file', file);
-            if (currentFolderId) {
-                formData.append('folderId', currentFolderId);
+            // Step 1: Check upload status on the server
+            fetch(`${API_BASE}/api/assets/upload-status?fileId=${fileId}&t=${Date.now()}`, {
+                headers: getAuthHeader()
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const offset = data.uploadedBytes || 0;
+                    uploadChunks(file, fileId, rowId, offset, currentFolderId);
+                } else {
+                    throw new Error(data.error || 'Failed to get upload status');
+                }
+            })
+            .catch(err => {
+                handleUploadFail(rowId, err.message);
+            });
+        }
+
+        function uploadChunks(file, fileId, rowId, offset, folderId) {
+            if (offset >= file.size) {
+                document.getElementById(`${rowId}-bar`).style.width = '100%';
+                document.getElementById(`${rowId}-percent`).textContent = '100%';
+                document.getElementById(`${rowId}-status`).textContent = "Verifying upload...";
             }
 
+            const chunk = file.slice(offset, Math.min(offset + CHUNK_SIZE, file.size));
             const xhr = new XMLHttpRequest();
-            xhr.open('POST', `${API_BASE}/api/assets`, true);
-
+            xhr.open('POST', `${API_BASE}/api/assets/upload-chunk`, true);
+            
             // Set Headers
             const headers = getAuthHeader();
             Object.keys(headers).forEach(key => {
                 xhr.setRequestHeader(key, headers[key]);
             });
+            
+            xhr.setRequestHeader('X-File-Id', fileId);
+            xhr.setRequestHeader('X-File-Name', file.name);
+            xhr.setRequestHeader('X-File-Size', file.size.toString());
+            xhr.setRequestHeader('X-Chunk-Offset', offset.toString());
+            if (folderId) {
+                xhr.setRequestHeader('X-Folder-Id', folderId);
+            }
 
+            // Track progress of the CURRENT chunk
             xhr.upload.addEventListener('progress', (e) => {
                 if (e.lengthComputable) {
-                    const percent = Math.round((e.loaded / e.total) * 100);
+                    const loadedTotal = offset + e.loaded;
+                    const percent = Math.round((loadedTotal / file.size) * 100);
                     document.getElementById(`${rowId}-bar`).style.width = percent + '%';
                     document.getElementById(`${rowId}-percent`).textContent = percent + '%';
+                    document.getElementById(`${rowId}-status`).textContent = `Uploading... (${formatBytes(loadedTotal)} / ${formatBytes(file.size)})`;
                 }
             });
 
@@ -1384,13 +1648,27 @@
                     try {
                         const res = JSON.parse(xhr.responseText);
                         if (res.success) {
-                            document.getElementById(`${rowId}-bar`).className = "bg-emerald-500 h-full rounded-full";
-                            document.getElementById(`${rowId}-percent`).className = "text-xs text-emerald-400";
-                            document.getElementById(`${rowId}-status`).textContent = "Upload successful";
-                            document.getElementById(`${rowId}-status`).className = "text-emerald-400";
-                            showToast(`Uploaded ${file.name} successfully!`, 'success');
+                            if (res.completed) {
+                                // Finalized successfully!
+                                document.getElementById(`${rowId}-bar`).className = "bg-emerald-500 h-full rounded-full";
+                                document.getElementById(`${rowId}-percent`).className = "text-xs text-emerald-400";
+                                document.getElementById(`${rowId}-percent`).textContent = '100%';
+                                document.getElementById(`${rowId}-status`).innerHTML = `Uploaded! Link: <a href="${cleanUrl(res.data.publicUrl)}" target="_blank" class="text-brand-400 hover:underline font-mono">${cleanUrl(res.data.publicUrl)}</a>`;
+                                document.getElementById(`${rowId}-status`).className = "text-emerald-400 text-xs mt-1 block truncate";
+                                showToast(`Uploaded ${file.name} successfully!`, 'success');
+                                
+                                // Clean up file reference
+                                delete uploadQueue[rowId];
+                                
+                                // Refresh gallery view
+                                loadDashboardData();
+                            } else {
+                                // Upload next chunk
+                                const nextOffset = res.uploadedBytes;
+                                uploadChunks(file, fileId, rowId, nextOffset, folderId);
+                            }
                         } else {
-                            throw new Error(res.error || 'Upload error');
+                            throw new Error(res.error || 'Chunk upload failed');
                         }
                     } catch (err) {
                         handleUploadFail(rowId, err.message);
@@ -1404,15 +1682,32 @@
                 handleUploadFail(rowId, 'Network error');
             };
 
-            xhr.send(formData);
+            xhr.send(chunk);
         }
 
         function handleUploadFail(rowId, errorMsg) {
             document.getElementById(`${rowId}-bar`).className = "bg-red-500 h-full rounded-full";
             document.getElementById(`${rowId}-percent`).className = "text-xs text-red-400";
-            document.getElementById(`${rowId}-status`).textContent = "Failed: " + errorMsg;
-            document.getElementById(`${rowId}-status`).className = "text-red-400";
+            
+            const statusContainer = document.getElementById(`${rowId}-status`);
+            statusContainer.className = "text-red-400 flex items-center justify-between w-full mt-1 text-xs";
+            statusContainer.innerHTML = `
+                <span class="truncate pr-2">Failed: ${errorMsg}</span>
+                <button onclick="retryUpload('${rowId}')" class="px-2 py-0.5 bg-red-500/10 border border-red-500/20 hover:bg-red-500 hover:border-red-500 text-red-400 hover:text-white rounded text-[10px] font-bold transition">
+                    Resume
+                </button>
+            `;
+            
             showToast(`Upload failed: ${errorMsg}`, 'error');
+        }
+
+        function retryUpload(rowId) {
+            const file = uploadQueue[rowId];
+            if (file) {
+                uploadSingleFile(file, rowId);
+            } else {
+                showToast("File reference lost. Please re-select the file.", "error");
+            }
         }
 
         // Toast Messages

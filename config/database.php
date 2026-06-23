@@ -16,6 +16,7 @@ define('DB_PORT', '3306');
 // File Storage Configuration
 define('UPLOAD_DIR', __DIR__ . '/../uploads'); // Corrected path: config/../uploads = uploads/
 define('MAX_FILE_SIZE', 500 * 1024 * 1024); // 500MB
+define('ADMIN_PASSCODE', 'root'); // Passcode required for admin write/delete actions
 
 // Get base URL dynamically
 function getBaseUrl() {
@@ -203,8 +204,30 @@ function getDBConnection() {
             INDEX (folderId),
             INDEX (user_email)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
-        
+
         $pdo->exec($createFoldersTableSQL);
+
+        // Create users table if it doesn't exist
+        $createUsersTableSQL = "CREATE TABLE IF NOT EXISTS users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            email VARCHAR(255) NOT NULL UNIQUE,
+            last_login DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+            deleted_at DATETIME DEFAULT NULL,
+            INDEX (email)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+        
+        $pdo->exec($createUsersTableSQL);
+
+        // Create visitors table if it doesn't exist
+        $createVisitorsTableSQL = "CREATE TABLE IF NOT EXISTS visitors (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            ip_address VARCHAR(45) NOT NULL,
+            user_agent TEXT NOT NULL,
+            visited_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+        
+        $pdo->exec($createVisitorsTableSQL);
 
         // Run ALTER TABLE to add missing columns in case tables already exist
         try {
@@ -218,6 +241,12 @@ function getDBConnection() {
             $checkFolderId = $pdo->query("SHOW COLUMNS FROM media_assets LIKE 'folderId'")->fetch();
             if (!$checkFolderId) {
                 $pdo->exec("ALTER TABLE media_assets ADD COLUMN folderId VARCHAR(36) DEFAULT NULL AFTER user_email, ADD INDEX (folderId)");
+            }
+
+            // Check if deleted_at exists in users
+            $checkDeletedAt = $pdo->query("SHOW COLUMNS FROM users LIKE 'deleted_at'")->fetch();
+            if (!$checkDeletedAt) {
+                $pdo->exec("ALTER TABLE users ADD COLUMN deleted_at DATETIME DEFAULT NULL AFTER createdAt");
             }
         } catch (PDOException $e) {
             // Ignore errors

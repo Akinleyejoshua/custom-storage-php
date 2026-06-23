@@ -156,51 +156,105 @@
             }
         }
 
+        const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
+
         function handleFilesUpload(files) {
             Array.from(files).forEach(file => {
                 uploadSingleFile(file);
             });
         }
 
-        function uploadSingleFile(file) {
+        // Generate a safe unique string identifier for a file
+        function getFileId(file) {
+            const cleanName = file.name.replace(/[^a-zA-Z0-9]/g, '');
+            return `file${cleanName}${file.size}${file.lastModified}`;
+        }
+
+        function uploadSingleFile(file, existingRowId = null) {
             const list = document.getElementById('uploadList');
-            const rowId = 'upload-row-' + Math.random().toString(36).substr(2, 9);
+            const fileId = getFileId(file);
+            const rowId = existingRowId || 'upload-row-' + Math.random().toString(36).substr(2, 9);
             
-            const item = document.createElement('div');
-            item.id = rowId;
-            item.className = "glass-panel p-4 rounded-xl border border-gray-800 flex flex-col space-y-2";
-            item.innerHTML = `
-                <div class="flex justify-between items-center text-sm">
-                    <span class="font-medium text-gray-200 truncate max-w-xs">${file.name}</span>
-                    <span class="text-xs text-gray-500" id="${rowId}-percent">0%</span>
-                </div>
-                <div class="w-full bg-gray-950 h-2 rounded-full overflow-hidden">
-                    <div id="${rowId}-bar" class="bg-brand-500 h-full rounded-full transition-all duration-200" style="width: 0%"></div>
-                </div>
-                <div class="flex justify-between items-center text-xs text-gray-500">
-                    <span>${formatBytes(file.size)}</span>
-                    <span id="${rowId}-status">Uploading...</span>
-                </div>
-            `;
-            list.prepend(item);
+            if (!existingRowId) {
+                const item = document.createElement('div');
+                item.id = rowId;
+                item.className = "glass-panel p-4 rounded-xl border border-gray-800 flex flex-col space-y-2";
+                item.innerHTML = `
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="font-medium text-gray-200 truncate max-w-xs">${file.name}</span>
+                        <span class="text-xs text-gray-500" id="${rowId}-percent">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-950 h-2 rounded-full overflow-hidden">
+                        <div id="${rowId}-bar" class="bg-brand-500 h-full rounded-full transition-all duration-200" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between items-center text-xs text-gray-500">
+                        <span>${formatBytes(file.size)}</span>
+                        <span id="${rowId}-status">Preparing...</span>
+                    </div>
+                `;
+                list.prepend(item);
+            } else {
+                // Reset UI to uploading
+                document.getElementById(`${rowId}-bar`).className = "bg-brand-500 h-full rounded-full transition-all duration-200";
+                document.getElementById(`${rowId}-percent`).className = "text-xs text-gray-500";
+                document.getElementById(`${rowId}-status`).className = "text-gray-500 text-xs";
+                document.getElementById(`${rowId}-status`).textContent = "Resuming...";
+            }
 
-            const formData = new FormData();
-            formData.append('file', file);
+            const urlParams = new URLSearchParams(window.location.search);
+            const folderId = urlParams.get('folderId') || '';
 
+            // Step 1: Check upload status on the server
+            fetch(`${API_BASE}/api/assets/upload-status?fileId=${fileId}&t=${Date.now()}`, {
+                headers: getAuthHeader()
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const offset = data.uploadedBytes || 0;
+                    uploadChunks(file, fileId, rowId, offset, folderId);
+                } else {
+                    throw new Error(data.error || 'Failed to get upload status');
+                }
+            })
+            .catch(err => {
+                handleUploadFail(rowId, err.message, file, folderId);
+            });
+        }
+
+        function uploadChunks(file, fileId, rowId, offset, folderId) {
+            if (offset >= file.size) {
+                document.getElementById(`${rowId}-bar`).style.width = '100%';
+                document.getElementById(`${rowId}-percent`).textContent = '100%';
+                document.getElementById(`${rowId}-status`).textContent = "Verifying upload...";
+            }
+
+            const chunk = file.slice(offset, Math.min(offset + CHUNK_SIZE, file.size));
             const xhr = new XMLHttpRequest();
-            xhr.open('POST', `${API_BASE}/api/assets`, true);
+            xhr.open('POST', `${API_BASE}/api/assets/upload-chunk`, true);
             
             // Set Headers
             const headers = getAuthHeader();
             Object.keys(headers).forEach(key => {
                 xhr.setRequestHeader(key, headers[key]);
             });
+            
+            xhr.setRequestHeader('X-File-Id', fileId);
+            xhr.setRequestHeader('X-File-Name', file.name);
+            xhr.setRequestHeader('X-File-Size', file.size.toString());
+            xhr.setRequestHeader('X-Chunk-Offset', offset.toString());
+            if (folderId) {
+                xhr.setRequestHeader('X-Folder-Id', folderId);
+            }
 
+            // Track progress of the CURRENT chunk
             xhr.upload.addEventListener('progress', (e) => {
                 if (e.lengthComputable) {
-                    const percent = Math.round((e.loaded / e.total) * 100);
+                    const loadedTotal = offset + e.loaded;
+                    const percent = Math.round((loadedTotal / file.size) * 100);
                     document.getElementById(`${rowId}-bar`).style.width = percent + '%';
                     document.getElementById(`${rowId}-percent`).textContent = percent + '%';
+                    document.getElementById(`${rowId}-status`).textContent = `Uploading... (${formatBytes(loadedTotal)} / ${formatBytes(file.size)})`;
                 }
             });
 
@@ -209,33 +263,59 @@
                     try {
                         const res = JSON.parse(xhr.responseText);
                         if (res.success) {
-                            document.getElementById(`${rowId}-bar`).className = "bg-emerald-500 h-full rounded-full";
-                            document.getElementById(`${rowId}-percent`).className = "text-xs text-emerald-400";
-                            document.getElementById(`${rowId}-status`).innerHTML = `Uploaded! Link: <a href="${cleanUrl(res.data.publicUrl)}" target="_blank" class="text-brand-400 hover:underline font-mono">${cleanUrl(res.data.publicUrl)}</a>`;
-                            document.getElementById(`${rowId}-status`).className = "text-emerald-400 text-xs mt-1 block truncate";
+                            if (res.completed) {
+                                // Finalized successfully!
+                                document.getElementById(`${rowId}-bar`).className = "bg-emerald-500 h-full rounded-full";
+                                document.getElementById(`${rowId}-percent`).className = "text-xs text-emerald-400";
+                                document.getElementById(`${rowId}-percent`).textContent = '100%';
+                                document.getElementById(`${rowId}-status`).innerHTML = `Uploaded! Link: <a href="${cleanUrl(res.data.publicUrl)}" target="_blank" class="text-brand-400 hover:underline font-mono">${cleanUrl(res.data.publicUrl)}</a>`;
+                                document.getElementById(`${rowId}-status`).className = "text-emerald-400 text-xs mt-1 block truncate";
+                            } else {
+                                // Upload next chunk
+                                const nextOffset = res.uploadedBytes;
+                                uploadChunks(file, fileId, rowId, nextOffset, folderId);
+                            }
                         } else {
-                            throw new Error(res.error || 'Upload error');
+                            throw new Error(res.error || 'Chunk upload failed');
                         }
                     } catch (err) {
-                        handleUploadFail(rowId, err.message);
+                        handleUploadFail(rowId, err.message, file, folderId);
                     }
                 } else {
-                    handleUploadFail(rowId, `Server error code ${xhr.status}`);
+                    handleUploadFail(rowId, `Server error code ${xhr.status}`, file, folderId);
                 }
             };
 
             xhr.onerror = function() {
-                handleUploadFail(rowId, 'Network error');
+                handleUploadFail(rowId, 'Network error', file, folderId);
             };
 
-            xhr.send(formData);
+            xhr.send(chunk);
         }
 
-        function handleUploadFail(rowId, errorMsg) {
+        function handleUploadFail(rowId, errorMsg, file, folderId) {
             document.getElementById(`${rowId}-bar`).className = "bg-red-500 h-full rounded-full";
             document.getElementById(`${rowId}-percent`).className = "text-xs text-red-400";
-            document.getElementById(`${rowId}-status`).textContent = "Failed: " + errorMsg;
-            document.getElementById(`${rowId}-status`).className = "text-red-400";
+            
+            const statusEl = document.getElementById(`${rowId}-status`);
+            statusEl.className = "text-red-400 flex items-center justify-between w-full mt-1 text-xs";
+            statusEl.innerHTML = `
+                <span class="truncate pr-2">Failed: ${errorMsg}</span>
+                <button onclick="resumeUploadByRowId('${rowId}')" class="px-2.5 py-1 bg-brand-500 hover:bg-brand-600 text-white rounded-md text-xs font-semibold shadow transition-all duration-150 shrink-0">Resume</button>
+            `;
+            
+            // Store file reference in a global queue to enable resuming
+            if (!window.uploadQueue) {
+                window.uploadQueue = {};
+            }
+            window.uploadQueue[rowId] = { file, folderId };
+        }
+
+        function resumeUploadByRowId(rowId) {
+            if (window.uploadQueue && window.uploadQueue[rowId]) {
+                const { file } = window.uploadQueue[rowId];
+                uploadSingleFile(file, rowId);
+            }
         }
 
         function cleanUrl(url) {

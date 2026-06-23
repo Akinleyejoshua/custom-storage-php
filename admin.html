@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Storage Gateway - Admin Console</title>
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Bricolage Grotesque"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f5ff',
+                            100: '#e0ebff',
+                            500: '#4169e1', // Royal Blue
+                            600: '#3a5ec9',
+                            700: '#2f4eb3',
+                            900: '#1b2f7a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #000000;
+            background-image:
+                radial-gradient(at 0% 0%, rgba(65, 105, 225, 0.15) 0, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(65, 105, 225, 0.08) 0, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card {
+            background: rgba(31, 41, 55, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            background: rgba(31, 41, 55, 0.6);
+            border-color: rgba(124, 58, 237, 0.3);
+            box-shadow: 0 10px 25px -5px rgba(124, 58, 237, 0.2);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+        }
+    </style>
+</head>
+
+<body class="text-gray-100 min-h-screen font-sans selection:bg-brand-500 selection:text-white">
+
+    <!-- Navigation Header -->
+    <header class="glass-panel border-b border-gray-800/80 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 bg-purple-500/10 border border-purple-500/20 rounded-xl">
+                        <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z">
+                            </path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+                            Admin Console</h1>
+                        <p class="text-[10px] text-purple-400 tracking-widest uppercase font-bold">Custom Storage</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="px-4 py-2 rounded-lg text-gray-400 hover:text-gray-200 transition text-sm font-semibold flex items-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        <span>User Portal</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Body -->
+    <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Metrics Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Total Visitors -->
+            <div class="glass-panel p-6 rounded-2xl border border-gray-800/80 relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-24 h-24 bg-blue-500 rounded-full blur-[60px] opacity-20"></div>
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Visitors Logged</p>
+                <div class="flex items-baseline space-x-2 mt-2">
+                    <span class="text-4xl font-extrabold text-white" id="admin-total-visitors">0</span>
+                    <span class="text-xs text-blue-400 font-medium">Page hits</span>
+                </div>
+            </div>
+
+            <!-- Total Users -->
+            <div class="glass-panel p-6 rounded-2xl border border-gray-800/80 relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-24 h-24 bg-purple-500 rounded-full blur-[60px] opacity-20"></div>
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Registered Spaces</p>
+                <div class="flex items-baseline space-x-2 mt-2">
+                    <span class="text-4xl font-extrabold text-white" id="admin-total-users">0</span>
+                    <span class="text-xs text-purple-400 font-medium">Active emails</span>
+                </div>
+            </div>
+
+            <!-- Total Storage -->
+            <div class="glass-panel p-6 rounded-2xl border border-gray-800/80 relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500 rounded-full blur-[60px] opacity-20"></div>
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Disk Storage Used</p>
+                <div class="flex items-baseline space-x-2 mt-2">
+                    <span class="text-4xl font-extrabold text-white" id="admin-total-storage">0 B</span>
+                    <span class="text-xs text-emerald-400 font-medium">Across all files</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Split Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left Side: Users List -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="glass-panel rounded-2xl border border-gray-800/80 p-6">
+                    <h2 class="text-lg font-bold text-gray-200 mb-4">User Spaces Overview</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-800/80 text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                                    <th class="py-3 px-4">Email Space</th>
+                                    <th class="py-3 px-4">Status</th>
+                                    <th class="py-3 px-4">Last Login</th>
+                                    <th class="py-3 px-4 w-20 text-center">Files</th>
+                                    <th class="py-3 px-4 text-right">Size Used</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body" class="divide-y divide-gray-850">
+                                <tr>
+                                    <td colspan="5" class="py-8 text-center text-gray-500">Loading user spaces...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- User Details Inspector Section (Dynamic when user is clicked) -->
+                <div id="inspector-section" class="glass-panel rounded-2xl border border-gray-850 p-6 hidden">
+                    <div class="flex items-center justify-between border-b border-gray-800 pb-4 mb-4">
+                        <div>
+                            <h3 class="text-md font-bold text-white flex items-center">
+                                <span class="w-2.5 h-2.5 rounded-full bg-purple-500 mr-2.5"></span>
+                                <span id="inspector-email">user@domain.com</span>
+                            </h3>
+                            <p class="text-xs text-gray-500 mt-1">Viewing all files and virtual folders for this user</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button id="btn-impersonate" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-semibold transition flex items-center space-x-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                                </svg>
+                                <span>Enter Space</span>
+                            </button>
+                            <button id="btn-recover" class="hidden px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition flex items-center space-x-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17"></path>
+                                </svg>
+                                <span>Recover Space</span>
+                            </button>
+                            <button onclick="closeInspector()" class="text-xs text-gray-400 hover:text-white px-2 py-1.5 bg-gray-900 border border-gray-800 rounded-xl">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Inspector Folders -->
+                    <div class="mb-6">
+                        <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Folders</h4>
+                        <div id="inspector-folders-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <!-- Folders dynamic list -->
+                        </div>
+                    </div>
+
+                    <!-- Inspector Files -->
+                    <div>
+                        <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Files</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="border-b border-gray-800/80 text-gray-500 font-semibold uppercase tracking-wider">
+                                        <th class="py-2.5 px-3">Name</th>
+                                        <th class="py-2.5 px-3">Type</th>
+                                        <th class="py-2.5 px-3">Size</th>
+                                        <th class="py-2.5 px-3">Uploader Folder</th>
+                                        <th class="py-2.5 px-3 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inspector-files-body" class="divide-y divide-gray-850 text-gray-300">
+                                    <!-- Files dynamic list -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Recent Visitors Log -->
+            <div class="space-y-6">
+                <div class="glass-panel rounded-2xl border border-gray-800/80 p-6">
+                    <h2 class="text-lg font-bold text-gray-200 mb-4">Recent Visits</h2>
+                    <div class="space-y-4 max-h-[500px] overflow-y-auto pr-2" id="visitors-list">
+                        <p class="text-sm text-gray-500 py-4 text-center">Loading visits...</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="toast"
+        class="fixed bottom-5 right-5 z-50 transform translate-y-10 opacity-0 transition-all duration-300 bg-gray-900 border border-gray-800 text-gray-200 px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3 max-w-sm pointer-events-none">
+        <div id="toastIcon" class="text-purple-400"></div>
+        <p id="toastMessage" class="text-sm font-medium"></p>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin + window.location.pathname.replace(/\/admin\.html$/, '').replace(/\/$/, '');
+        let activeUserEmail = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            loadUsers();
+            trackVisit();
+        });
+
+        async function trackVisit() {
+            if (localStorage.getItem('custom_gateway_visit_logged') === 'true') {
+                return;
+            }
+            try {
+                const response = await fetch(`${API_BASE}/api/track`, { method: 'POST' });
+                const result = await response.json();
+                if (result.success) {
+                    localStorage.setItem('custom_gateway_visit_logged', 'true');
+                }
+            } catch (err) {}
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/stats`);
+                if (!response.ok) throw new Error('Failed to load stats');
+                const result = await response.json();
+                if (!result.success) return;
+
+                const data = result.data;
+                document.getElementById('admin-total-visitors').textContent = data.total_visitors;
+                document.getElementById('admin-total-users').textContent = data.total_users;
+                document.getElementById('admin-total-storage').textContent = formatBytes(data.total_storage);
+
+                // Render recent visitors
+                const container = document.getElementById('visitors-list');
+                container.innerHTML = '';
+
+                if (data.recent_visitors.length === 0) {
+                    container.innerHTML = `<p class="text-xs text-gray-500 text-center py-4">No recent visits logged yet.</p>`;
+                    return;
+                }
+
+                data.recent_visitors.forEach(v => {
+                    const date = new Date(v.visited_at).toLocaleString();
+                    const browser = parseUA(v.user_agent);
+                    const card = document.createElement('div');
+                    card.className = 'p-3 bg-gray-950/40 border border-gray-900 rounded-xl space-y-1 text-xs';
+                    card.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <span class="font-mono font-semibold text-purple-400">${v.ip_address}</span>
+                            <span class="text-[10px] text-gray-500">${date}</span>
+                        </div>
+                        <p class="text-gray-400 truncate" title="${v.user_agent}">${browser}</p>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        let usersListGlobal = [];
+        async function loadUsers() {
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/users`);
+                if (!response.ok) throw new Error('Failed to load user list');
+                const result = await response.json();
+                if (!result.success) return;
+
+                const tableBody = document.getElementById('users-table-body');
+                tableBody.innerHTML = '';
+
+                const users = result.data;
+                usersListGlobal = users;
+                if (users.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="py-8 text-center text-gray-500">No active user spaces discovered.</td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                users.forEach(u => {
+                    const loginDate = u.last_login ? new Date(u.last_login).toLocaleDateString(undefined, {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}) : 'Never';
+                    const isDeleted = u.deleted_at !== null;
+                    const statusBadge = isDeleted 
+                        ? `<span class="px-2 py-0.5 bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold rounded-lg">Deactivated</span>`
+                        : `<span class="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded-lg">Active</span>`;
+                    
+                    const tr = document.createElement('tr');
+                    tr.className = `hover:bg-purple-500/5 cursor-pointer transition ${activeUserEmail === u.email ? 'bg-purple-500/5 border-l-2 border-purple-500' : ''}`;
+                    tr.onclick = () => inspectUser(u.email);
+                    tr.innerHTML = `
+                        <td class="py-3 px-4 font-semibold text-gray-200 truncate max-w-[180px]">${u.email}</td>
+                        <td class="py-3 px-4">${statusBadge}</td>
+                        <td class="py-3 px-4 text-gray-400 text-xs">${loginDate}</td>
+                        <td class="py-3 px-4 text-center font-semibold text-gray-300">${u.files_count}</td>
+                        <td class="py-3 px-4 text-right text-gray-300 font-mono">${formatBytes(u.storage_used)}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function inspectUser(email) {
+            activeUserEmail = email;
+            
+            // Re-render user list to show selection border
+            loadUsers();
+
+            const inspector = document.getElementById('inspector-section');
+            inspector.classList.remove('hidden');
+            document.getElementById('inspector-email').textContent = email;
+            
+            const btnImpersonate = document.getElementById('btn-impersonate');
+            const btnRecover = document.getElementById('btn-recover');
+            
+            btnImpersonate.classList.add('hidden');
+            btnRecover.classList.add('hidden');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/user-details?email=${encodeURIComponent(email)}`);
+                if (!response.ok) throw new Error('Failed to load details');
+                const result = await response.json();
+                if (!result.success) return;
+
+                const isDeleted = result.data.deleted_at !== null;
+                if (isDeleted) {
+                    btnRecover.classList.remove('hidden');
+                    btnRecover.onclick = () => recoverUser(email);
+                } else {
+                    btnImpersonate.classList.remove('hidden');
+                    btnImpersonate.onclick = () => impersonateUser(email);
+                }
+
+                const foldersGrid = document.getElementById('inspector-folders-grid');
+                foldersGrid.innerHTML = '';
+                if (result.data.folders.length === 0) {
+                    foldersGrid.innerHTML = `<p class="col-span-full text-xs text-gray-500 italic">No custom virtual folders</p>`;
+                } else {
+                    result.data.folders.forEach(f => {
+                        const div = document.createElement('div');
+                        div.className = 'p-2.5 bg-gray-900 border border-gray-800 rounded-xl flex items-center space-x-2 text-xs truncate';
+                        div.innerHTML = `
+                            <svg class="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
+                            <span class="text-gray-300 font-semibold truncate" title="${f.name}">${f.name}</span>
+                        `;
+                        foldersGrid.appendChild(div);
+                    });
+                }
+
+                const filesBody = document.getElementById('inspector-files-body');
+                filesBody.innerHTML = '';
+                if (result.data.assets.length === 0) {
+                    filesBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="py-6 text-center text-gray-500 italic">No files uploaded yet.</td>
+                        </tr>
+                    `;
+                } else {
+                    result.data.assets.forEach(a => {
+                        // Find folder name if any
+                        const folderObj = result.data.folders.find(f => f.folderId === a.folderId);
+                        const folderName = folderObj ? folderObj.name : 'Root / Unorganized';
+                        
+                        const tr = document.createElement('tr');
+                        tr.className = 'hover:bg-gray-800/40 transition';
+                        tr.innerHTML = `
+                            <td class="py-2.5 px-3 truncate max-w-[200px] font-semibold text-gray-200" title="${a.originalFilename}">${a.originalFilename}</td>
+                            <td class="py-2.5 px-3 text-gray-400 font-mono select-all text-[10px] truncate max-w-[100px]">${a.mimeType}</td>
+                            <td class="py-2.5 px-3 text-gray-400 font-mono">${formatBytes(a.fileSize)}</td>
+                            <td class="py-2.5 px-3 text-gray-400 truncate max-w-[100px]">${folderName}</td>
+                            <td class="py-2.5 px-3 text-right">
+                                <div class="flex justify-end space-x-1.5">
+                                    <a href="${a.publicUrl}" target="_blank" class="px-2 py-1 bg-gray-900 border border-gray-800 hover:border-gray-700 text-gray-300 rounded font-semibold transition">View</a>
+                                    <button onclick="adminDeleteAsset('${a.assetId}', '${email}')" class="px-2 py-1 bg-red-950/20 border border-red-900/40 hover:bg-red-950/55 text-red-400 rounded font-semibold transition">Delete</button>
+                                </div>
+                            </td>
+                        `;
+                        filesBody.appendChild(tr);
+                    });
+                }
+
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        function impersonateUser(email) {
+            localStorage.setItem('custom_gateway_email', email);
+            window.location.href = 'index.html';
+        }
+
+        async function recoverUser(email) {
+            const passcode = prompt('Please enter the Admin Passcode to authorize account recovery:');
+            if (passcode === null) return;
+            if (passcode.trim() === '') {
+                showToast('Passcode cannot be empty', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/recover-user`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Admin-Passcode': passcode
+                    },
+                    body: JSON.stringify({ email })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || 'Recovery request failed');
+                }
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('User space recovered successfully.', 'success');
+                    await loadStats();
+                    await loadUsers();
+                    inspectUser(email);
+                } else {
+                    showToast(result.error || 'Failed to recover user space', 'error');
+                }
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function adminDeleteAsset(assetId, email) {
+            if (!confirm('Are you absolutely sure you want to permanently delete this user asset? This cannot be undone.')) {
+                return;
+            }
+
+            const passcode = prompt('Please enter the Admin Passcode to authorize deletion:');
+            if (passcode === null) return;
+            if (passcode.trim() === '') {
+                showToast('Passcode cannot be empty', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/assets/${assetId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-Admin-Passcode': passcode
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || 'Deletion request failed');
+                }
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('Asset deleted successfully.', 'success');
+                    loadStats();
+                    inspectUser(email);
+                } else {
+                    showToast(result.error || 'Failed to delete asset', 'error');
+                }
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        function closeInspector() {
+            activeUserEmail = null;
+            document.getElementById('inspector-section').classList.add('hidden');
+            loadUsers();
+        }
+
+        function formatBytes(bytes, precision = 2) {
+            if (bytes === 0) return '0 B';
+            const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const bytesVal = Math.max(bytes, 0);
+            const pow = Math.min(Math.floor((bytesVal ? Math.log(bytesVal) : 0) / Math.log(1024)), units.length - 1);
+            const size = bytesVal / Math.pow(1024, pow);
+            return size.toFixed(precision) + ' ' + units[pow];
+        }
+
+        function parseUA(ua) {
+            if (ua.includes('Firefox/')) return 'Mozilla Firefox';
+            if (ua.includes('Chrome/')) return 'Google Chrome';
+            if (ua.includes('Safari/') && !ua.includes('Chrome/')) return 'Apple Safari';
+            if (ua.includes('Edge/')) return 'Microsoft Edge';
+            return ua.split(' ')[0] || 'Unknown Browser';
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const msg = document.getElementById('toastMessage');
+
+            msg.textContent = message;
+
+            if (type === 'error') {
+                icon.innerHTML = `<svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            } else if (type === 'info') {
+                icon.innerHTML = `<svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            } else {
+                icon.innerHTML = `<svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            }
+
+            toast.classList.remove('translate-y-10', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+
+</html>
